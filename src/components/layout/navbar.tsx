@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
+import Image from "next/image";
 import {
   AppBar,
   Box,
@@ -118,19 +119,39 @@ export default function Navbar() {
         <Container maxWidth="lg" sx={{ height: "100%", px: { xs: 2, sm: 3, md: 4 } }}>
           <Toolbar disableGutters sx={{ minHeight: "100%", height: "100%" }}>
             <Typography
-              component="a"
-              href="#home"
-              sx={{
-                fontFamily: "var(--font-dm-serif), serif",
-                color: "primary.main",
-                textDecoration: "none",
-                fontSize: { xs: "1.2rem", md: "1.25rem" },
-                lineHeight: 1,
-                letterSpacing: 0.01,
-                transition: "color 0.3s ease",
-              }}
+              component="div"
             >
-              Physio Patella
+              <Box
+                component="a"
+                href="#home"
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 1,
+                  textDecoration: "none",
+                }}
+              >
+                <Image
+                  src="/physiopatella_logo.jpg"
+                  alt="Physio Patella logo"
+                  width={36}
+                  height={36}
+                  style={{ borderRadius: 8 }}
+                />
+                <Typography
+                  sx={{
+                    fontFamily: "var(--font-dm-serif), serif",
+                    color: "primary.main",
+                    textDecoration: "none",
+                    fontSize: { xs: "1.2rem", md: "1.25rem" },
+                    lineHeight: 1,
+                    letterSpacing: 0.01,
+                    transition: "color 0.3s ease",
+                  }}
+                >
+                  Physio Patella
+                </Typography>
+              </Box>
             </Typography>
 
             <Stack
@@ -248,14 +269,26 @@ export default function Navbar() {
         }}
       >
         <Typography
-          sx={{
-            fontFamily: "var(--font-dm-serif), serif",
-            color: "primary.main",
-            fontSize: "1.5rem",
-            mb: 2,
-          }}
+          component="div"
         >
-          Physio Patella
+          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1, mb: 2 }}>
+            <Image
+              src="/physiopatella_logo.jpg"
+              alt="Physio Patella logo"
+              width={36}
+              height={36}
+              style={{ borderRadius: 8 }}
+            />
+            <Typography
+              sx={{
+                fontFamily: "var(--font-dm-serif), serif",
+                color: "primary.main",
+                fontSize: "1.5rem",
+              }}
+            >
+              Physio Patella
+            </Typography>
+          </Box>
         </Typography>
 
         <List sx={{ py: 0 }}>

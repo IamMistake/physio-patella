@@ -18,7 +18,6 @@ import {
   Typography,
 } from "@mui/material";
 import SectionOverline from "@/components/ui/section-overline";
-import { createClient } from "@/lib/supabase/client";
 import type { AppointmentSlot, Employee } from "@/types/physio";
 
 type BookingSectionProps = {
@@ -83,7 +82,6 @@ function getInitials(name: string | null) {
 }
 
 export default function BookingSection({ employees, slots }: BookingSectionProps) {
-  const supabase = React.useMemo(() => createClient(), []);
   const [activeStep, setActiveStep] = React.useState(0);
   const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string | null>(null);
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
@@ -223,33 +221,37 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
       setErrorMessage(null);
 
       try {
-        const { error: insertError } = await supabase.from("appointments").insert({
-          slot_id: selectedSlot.id,
-          employee_id: selectedEmployee.id,
-          client_name: formState.fullName.trim(),
-          email: formState.email.trim(),
-          phone: formState.phone.trim() || null,
-          notes: formState.notes.trim() || null,
-          status: "pending",
+        const response = await fetch("/api/appointments", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            slotId: selectedSlot.id,
+            employeeId: selectedEmployee.id,
+            clientName: formState.fullName.trim(),
+            email: formState.email.trim(),
+            phone: formState.phone.trim() || null,
+            notes: formState.notes.trim() || null,
+          }),
         });
 
-        if (insertError) {
-          throw insertError;
-        }
+        const data = (await response.json()) as {
+          error?: string;
+          slot?: AppointmentSlot;
+        };
 
-        const { error: updateError } = await supabase
-          .from("appointment_slots")
-          .update({ is_available: false })
-          .eq("id", selectedSlot.id);
-
-        if (updateError) {
-          console.warn("Could not mark slot unavailable immediately:", updateError.message);
+        if (!response.ok) {
+          setErrorMessage(
+            data.error ?? "This slot was just taken. Please go back and choose another time.",
+          );
+          return;
         }
 
         setAvailableSlots((previousSlots) =>
           previousSlots.filter((slot) => slot.id !== selectedSlot.id),
         );
-        setBookedSlot(selectedSlot);
+        setBookedSlot(data.slot ?? selectedSlot);
         setIsConfirmed(true);
       } catch {
         setErrorMessage("This slot was just taken. Please go back and choose another time.");
@@ -257,7 +259,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
         setIsSubmitting(false);
       }
     },
-    [formState, selectedEmployee, selectedSlot, supabase],
+    [formState, selectedEmployee, selectedSlot],
   );
 
   return (

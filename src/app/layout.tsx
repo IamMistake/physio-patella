@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Serif_Display, Instrument_Sans } from "next/font/google";
 import { Box } from "@mui/material";
+import Footer from "@/components/layout/footer";
 import Navbar from "@/components/layout/navbar";
 import AppThemeProvider from "@/components/providers/app-theme-provider";
 import "./globals.css";
@@ -44,6 +45,7 @@ export default function RootLayout({
           >
             {children}
           </Box>
+          <Footer />
         </AppThemeProvider>
       </body>
     </html>
