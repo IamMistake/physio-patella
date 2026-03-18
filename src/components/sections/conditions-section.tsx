@@ -3,12 +3,12 @@ import { Box, Container, Stack, Typography } from "@mui/material";
 import SectionOverline from "@/components/ui/section-overline";
 
 const conditions = [
-  { label: "Shoulder", src: "https://img.icons8.com/?size=100&id=1804&format=png&color=FFFFFF" },
-  { label: "Elbow", src: "https://img.icons8.com/?size=100&id=qwEAb2Lxoaqg&format=png" },
-  { label: "Hip", src: "https://img.icons8.com/?size=100&id=NUqaAADfLgWX&format=png&color=FFFFFF" },
-  { label: "Knee", src: "https://img.icons8.com/?size=100&id=tBwVH3f61ZWb&format=png" },
-  { label: "Ankle", src: "https://img.icons8.com/?size=100&id=R5WIkTqrpDMd&format=png" },
-  { label: "Spine", src: "https://img.icons8.com/?size=100&id=6noy0BT6FFQ0&format=png" },
+  { label: "Рамо", src: "https://img.icons8.com/?size=100&id=1804&format=png&color=FFFFFF" },
+  { label: "Лакот", src: "https://img.icons8.com/?size=100&id=qwEAb2Lxoaqg&format=png" },
+  { label: "Колк", src: "https://img.icons8.com/?size=100&id=NUqaAADfLgWX&format=png&color=FFFFFF" },
+  { label: "Колено", src: "https://img.icons8.com/?size=100&id=tBwVH3f61ZWb&format=png" },
+  { label: "Глужд", src: "https://img.icons8.com/?size=100&id=R5WIkTqrpDMd&format=png" },
+  { label: "Рбет", src: "https://img.icons8.com/?size=100&id=6noy0BT6FFQ0&format=png" },
 ];
 
 export default function ConditionsSection() {
@@ -28,13 +28,13 @@ export default function ConditionsSection() {
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={6}>
           <Stack spacing={1.3} sx={{ maxWidth: 480, mx: "auto", textAlign: "center", alignItems: "center" }}>
-            <SectionOverline>Areas of care</SectionOverline>
+            <SectionOverline>Области на третман</SectionOverline>
             <Typography
               id="conditions-heading"
               variant="h2"
               sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "2rem", md: "2.8rem" } }}
             >
-              What we treat
+              Што третираме
             </Typography>
           </Stack>
 
@@ -80,7 +80,7 @@ export default function ConditionsSection() {
                   <Box
                     component="img"
                     src={condition.src}
-                    alt={`${condition.label} icon`}
+                    alt={`${condition.label} икона`}
                     className="condition-icon"
                     sx={{
                       width: "2.2rem",
@@ -110,7 +110,7 @@ export default function ConditionsSection() {
                 },
               }}
             >
-              View all conditions and therapies
+              Види ги сите состојби и терапии
               <ArrowForwardRoundedIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: "middle" }} />
             </Typography>
           </Box>

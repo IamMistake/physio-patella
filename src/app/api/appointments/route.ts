@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
   if (!slotId || !employeeId || !clientName || !email) {
     return NextResponse.json(
-      { error: "Missing required booking fields." },
+      { error: "Недостасуваат задолжителни полиња за закажување." },
       { status: 400 },
     );
   }
@@ -57,14 +57,14 @@ export async function POST(request: Request) {
 
   if (reserveError) {
     return NextResponse.json(
-      { error: "Could not reserve this slot. Please try again." },
+      { error: "Не можевме да го резервираме овој термин. Обидете се повторно." },
       { status: 500 },
     );
   }
 
   if (!reservedSlot) {
     return NextResponse.json(
-      { error: "This slot was just taken. Please choose another time." },
+      { error: "Овој термин е веќе резервиран. Изберете друго време." },
       { status: 409 },
     );
   }
@@ -76,7 +76,7 @@ export async function POST(request: Request) {
       .eq("id", reservedSlot.id);
 
     return NextResponse.json(
-      { error: "Selected employee does not match this slot." },
+      { error: "Избраниот вработен не се совпаѓа со терминот." },
       { status: 400 },
     );
   }
@@ -99,13 +99,13 @@ export async function POST(request: Request) {
 
     if (appointmentError.code === "23505") {
       return NextResponse.json(
-        { error: "This slot was just taken. Please choose another time." },
+        { error: "Овој термин е веќе резервиран. Изберете друго време." },
         { status: 409 },
       );
     }
 
     return NextResponse.json(
-      { error: "Could not create appointment. Please try again." },
+      { error: "Не можевме да креираме термин. Обидете се повторно." },
       { status: 500 },
     );
   }

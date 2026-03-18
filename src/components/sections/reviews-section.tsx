@@ -42,21 +42,21 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
       <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1, px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={1.3}>
           <SectionOverline>
-            What clients say
+            Што кажуваат клиентите
           </SectionOverline>
           <Typography
             id="reviews-heading"
             variant="h2"
             sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "2rem", md: "2.8rem" } }}
           >
-            Real results. Real people.
+            Реални резултати. Реални луѓе.
           </Typography>
         </Stack>
       </Container>
 
       <Box
         role="region"
-        aria-label="Client reviews"
+        aria-label="Рецензии од клиенти"
         aria-live="off"
         onFocus={() => setIsPaused(true)}
         sx={{
@@ -136,11 +136,11 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
                         WebkitBoxOrient: "vertical",
                       }}
                     >
-                      {review.quote ?? "A thoughtfully guided treatment journey from start to finish."}
+                      {review.quote ?? "Внимателно водено опоравување од почеток до крај."}
                     </Typography>
 
                     <Typography sx={{ mt: "auto", fontSize: "0.82rem", color: "text.secondary" }}>
-                      {review.client_name ?? "Physio Patella client"}
+                      {review.client_name ?? "Клиент на Physio Patella"}
                     </Typography>
                   </Paper>
                 ))}
@@ -152,7 +152,7 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
         <Stack alignItems="center" sx={{ mt: 3 }}>
           <IconButton
             onClick={() => setIsPaused((previousState) => !previousState)}
-            aria-label={isPaused ? "Resume reviews" : "Pause reviews"}
+            aria-label={isPaused ? "Продолжи ги рецензиите" : "Паузирај рецензии"}
             size="small"
             sx={{
               border: "1px solid",

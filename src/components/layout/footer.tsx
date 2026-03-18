@@ -17,11 +17,11 @@ import { alpha, useTheme } from "@mui/material/styles";
 import ThemeToggle from "@/components/theme/theme-toggle";
 
 const quickLinks = [
-  { label: "Home", href: "#home" },
-  { label: "Team", href: "#team" },
-  { label: "Therapies", href: "#therapies" },
-  { label: "Blog", href: "#blog" },
-  { label: "Book appointment", href: "#booking" },
+  { label: "Почетна", href: "#home" },
+  { label: "Тим", href: "#team" },
+  { label: "Терапии", href: "#therapies" },
+  { label: "Искуства", href: "#blog" },
+  { label: "Закажи термин", href: "#booking" },
 ];
 
 const mutedText = "rgba(255,255,255,0.75)";
@@ -55,7 +55,7 @@ export default function Footer() {
               Physio Patella
             </Typography>
             <Typography sx={{ fontSize: "0.8125rem", color: subtleText }}>
-              Expert physiotherapy & chiropractic care
+              Стручна физиотерапија и хиропрактика
             </Typography>
             <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
               <IconButton
@@ -63,7 +63,7 @@ export default function Footer() {
                 href="https://instagram.com/physio.patella"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Physio Patella Instagram"
+                aria-label="Инстаграм профил на Physio Patella"
                 sx={{
                   color: "rgba(255,255,255,0.7)",
                   minWidth: 44,
@@ -80,7 +80,7 @@ export default function Footer() {
 
           <Stack spacing={0.7}>
             <Typography sx={{ fontSize: "0.6875rem", letterSpacing: "0.12em", textTransform: "uppercase", color: labelText }}>
-              Quick links
+              Брзи линкови
             </Typography>
             {quickLinks.map((item) => (
               <MuiLink
@@ -104,7 +104,7 @@ export default function Footer() {
 
           <Stack spacing={0.9}>
             <Typography sx={{ fontSize: "0.6875rem", letterSpacing: "0.12em", textTransform: "uppercase", color: labelText }}>
-              Contact
+              Контакт
             </Typography>
 
             <Stack direction="row" spacing={1} alignItems="center">
@@ -124,7 +124,7 @@ export default function Footer() {
                   },
                 }}
               >
-                Physio Patella, Skopje
+                Physio Patella, Скопје
               </Typography>
             </Stack>
 
@@ -179,7 +179,7 @@ export default function Footer() {
           }}
         >
           <Typography sx={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.4)" }}>
-            (c) 2026 Physio Patella. All rights reserved.
+            (c) 2026 Physio Patella. Сите права се задржани.
           </Typography>
           <ThemeToggle />
         </Stack>

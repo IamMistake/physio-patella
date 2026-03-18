@@ -3,9 +3,9 @@ import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import SectionOverline from "@/components/ui/section-overline";
 
 const trustStats = [
-  { value: "12+", label: "years experience" },
-  { value: "1,200+", label: "patients" },
-  { value: "5-star", label: "rated" },
+  { value: "12+", label: "години искуство" },
+  { value: "1,200+", label: "пациенти" },
+  { value: "5 ѕвезди", label: "оценка" },
 ];
 
 export default function HeroSection() {
@@ -58,7 +58,7 @@ export default function HeroSection() {
         <Box sx={{ width: { xs: "100%", md: "60%" } }}>
           <Stack spacing={3}>
             <SectionOverline withLeadingLine letterSpacing="0.18em">
-              Physiotherapy & Chiropractic
+              Физиотерапија и хиропрактика
             </SectionOverline>
 
             <Typography
@@ -72,7 +72,7 @@ export default function HeroSection() {
                 textShadow: "0 2px 20px rgba(0,0,0,0.4)",
               }}
             >
-              Move without pain. Live without limits.
+              Движи се без болка. Живеј без ограничувања.
             </Typography>
 
             <Typography
@@ -83,8 +83,8 @@ export default function HeroSection() {
                 maxWidth: 520,
               }}
             >
-              Expert physiotherapy and chiropractic care tailored to your body. Book a
-              session with our specialist team today.
+              Стручна физиотерапија и хиропрактика прилагодена на твоето тело. Закажи
+              термин со нашиот тим уште денес.
             </Typography>
 
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
@@ -109,7 +109,7 @@ export default function HeroSection() {
                   },
                 }}
               >
-                Book an appointment
+                Закажи термин
               </Button>
 
               <Button
@@ -130,7 +130,7 @@ export default function HeroSection() {
                   },
                 }}
               >
-                Meet the team
+                Запознај го тимот
               </Button>
             </Stack>
           </Stack>

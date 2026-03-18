@@ -19,7 +19,7 @@ const instrumentSans = Instrument_Sans({
 
 export const metadata: Metadata = {
   title: "Physio Patella",
-  description: "Physiotherapy and chiropractic studio website",
+  description: "Физиотерапија и хиропрактика во Скопје",
 };
 
 export default function RootLayout({
@@ -28,11 +28,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="mk">
       <body className={`${dmSerif.variable} ${instrumentSans.variable} antialiased`}>
         <AppThemeProvider>
           <a className="skip-link" href="#main-content">
-            Skip to main content
+            Прескокни до главната содржина
           </a>
           <Navbar />
           <Box

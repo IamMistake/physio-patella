@@ -35,7 +35,29 @@ function getAccent(docType: string | null) {
 
 function formatDocType(docType: string | null) {
   if (!docType) {
-    return "Document";
+    return "Документ";
+  }
+
+  const normalized = docType.toLowerCase().trim();
+
+  if (normalized === "certificate") {
+    return "Сертификат";
+  }
+
+  if (normalized === "insurance") {
+    return "Осигурување";
+  }
+
+  if (normalized === "brochure") {
+    return "Брошура";
+  }
+
+  if (normalized === "policy") {
+    return "Политика";
+  }
+
+  if (normalized === "license") {
+    return "Лиценца";
   }
 
   return docType
@@ -55,20 +77,20 @@ export default function DocumentsSection({ documents }: DocumentsSectionProps) {
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={4}>
           <Stack spacing={1.3}>
-            <SectionOverline>Trust & transparency</SectionOverline>
+            <SectionOverline>Доверба и транспарентност</SectionOverline>
             <Typography
               id="documents-heading"
               variant="h2"
               sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "2rem", md: "2.8rem" } }}
             >
-              Certificates
+              Сертификати
             </Typography>
           </Stack>
 
           {documents.length === 0 ? (
             <Paper sx={{ border: "1px solid", borderColor: "divider", p: 3, borderRadius: 2 }}>
               <Typography sx={{ color: "text.secondary", fontSize: { xs: "1rem", md: "1.125rem" } }}>
-                Studio documents coming soon.
+                Документите наскоро ќе бидат достапни.
               </Typography>
             </Paper>
           ) : (
@@ -141,7 +163,7 @@ export default function DocumentsSection({ documents }: DocumentsSectionProps) {
                         overflow: "hidden",
                       }}
                     >
-                      {document.title ?? "Studio document"}
+                      {document.title ?? "Документ од студио"}
                     </Typography>
 
                     <Typography
@@ -156,7 +178,7 @@ export default function DocumentsSection({ documents }: DocumentsSectionProps) {
                         WebkitBoxOrient: "vertical",
                       }}
                     >
-                      {document.description ?? "Official document from Physio Patella."}
+                      {document.description ?? "Официјален документ од Physio Patella."}
                     </Typography>
 
                     {document.file_path ? (
@@ -177,9 +199,9 @@ export default function DocumentsSection({ documents }: DocumentsSectionProps) {
                           "&:hover": {
                             bgcolor: `color-mix(in srgb, ${accent.cssVar} 8%, transparent)`,
                           },
-                        }}
+                       }}
                       >
-                        View document
+                        Види документ
                       </Button>
                     ) : (
                       <Button
@@ -192,7 +214,7 @@ export default function DocumentsSection({ documents }: DocumentsSectionProps) {
                           minHeight: 44,
                         }}
                       >
-                        Coming soon
+                        Наскоро
                       </Button>
                     )}
                   </Paper>

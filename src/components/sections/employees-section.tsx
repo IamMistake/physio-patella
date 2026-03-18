@@ -48,13 +48,13 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={4}>
           <Stack spacing={1.3}>
-            <SectionOverline>Our specialists</SectionOverline>
+            <SectionOverline>Наши специјалисти</SectionOverline>
             <Typography
               id="team-heading"
               variant="h2"
               sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "2rem", md: "2.8rem" } }}
             >
-              Hands that heal
+              Тим што лекува
             </Typography>
           </Stack>
 
@@ -122,7 +122,7 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                     {imagePath ? (
                       <Image
                         src={imagePath}
-                        alt={`Photo of ${employee.name ?? "Physio Patella specialist"}`}
+                        alt={`Фотографија од ${employee.name ?? "специјалист на Physio Patella"}`}
                         fill
                         sizes="120px"
                         loading="lazy"
@@ -152,7 +152,7 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                       color: "text.primary",
                     }}
                   >
-                    {employee.name ?? "Physio Patella Specialist"}
+                    {employee.name ?? "Специјалист на Physio Patella"}
                   </Typography>
 
                   {employee.specialization ? (
@@ -180,7 +180,7 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                       WebkitBoxOrient: "vertical",
                     }}
                   >
-                    {employee.description ?? "Personalized care focused on recovery and long-term mobility."}
+                    {employee.description ?? "Персонализирана нега фокусирана на опоравување и долгорочна мобилност."}
                   </Typography>
 
                   <Stack spacing={0.7} alignItems="center" sx={{ flexGrow: 1, justifyContent: "flex-end", mt: 1.5 }}>
@@ -189,14 +189,14 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                       <Stack key={certificate.id} direction="row" spacing={0.6} alignItems="center">
                         <CheckRoundedIcon sx={{ fontSize: 12, color: "primary.main" }} />
                         <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", textAlign: "center" }}>
-                          {certificate.title ?? "Certificate"}
+                          {certificate.title ?? "Сертификат"}
                         </Typography>
                       </Stack>
                     ))}
 
                     {hiddenCount > 0 ? (
                       <Typography sx={{ fontSize: "0.75rem", color: "primary.main" }}>
-                        + {hiddenCount} more
+                        + {hiddenCount} повеќе
                       </Typography>
                     ) : null}
                   </Stack>

@@ -28,13 +28,13 @@ type NavLink = {
 };
 
 const navLinks: NavLink[] = [
-  { label: "Home", href: "#home" },
-  { label: "Team", href: "#team" },
-  { label: "Therapies", href: "#therapies" },
-  { label: "Blog", href: "#blog" },
+  { label: "Почетна", href: "#home" },
+  { label: "Тим", href: "#team" },
+  { label: "Терапии", href: "#therapies" },
+  { label: "Искуства", href: "#blog" },
 ];
 
-const bookNowLink: NavLink = { label: "Book Now", href: "#booking" };
+const bookNowLink: NavLink = { label: "Закажи", href: "#booking" };
 
 export default function Navbar() {
   const theme = useTheme();
@@ -234,7 +234,7 @@ export default function Navbar() {
               <ThemeToggle />
               <IconButton
                 onClick={() => setDrawerOpen(true)}
-                aria-label="Open navigation menu"
+                aria-label="Отвори мени за навигација"
                 sx={{
                   display: { xs: "inline-flex", md: "none" },
                   border: "1px solid",
@@ -326,7 +326,7 @@ export default function Navbar() {
 
         <Box sx={{ mt: "auto", pt: 2 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>Theme</Typography>
+            <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>Тема</Typography>
             <ThemeToggle />
           </Stack>
         </Box>

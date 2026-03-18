@@ -3,24 +3,24 @@ import SectionOverline from "@/components/ui/section-overline";
 
 const steps = [
   {
-    title: "Initial consultation",
-    description: "We assess your condition and history",
+    title: "Почетна консултација",
+    description: "Ја проценуваме состојбата и историјата",
   },
   {
-    title: "Diagnosis & plan",
-    description: "A personalised treatment plan is created",
+    title: "Дијагноза и план",
+    description: "Креираме персонализиран план за третман",
   },
   {
-    title: "Treatment begins",
-    description: "Hands-on therapy and guided exercises",
+    title: "Почеток на третман",
+    description: "Рачна терапија и водени вежби",
   },
   {
-    title: "Progress tracking",
-    description: "Regular check-ins to measure improvement",
+    title: "Следење напредок",
+    description: "Редовни контроли за мерење на напредок",
   },
   {
-    title: "Full recovery",
-    description: "Return to pain-free movement",
+    title: "Целосно опоравување",
+    description: "Враќање кон движење без болка",
   },
 ];
 
@@ -32,13 +32,13 @@ export default function JourneySection() {
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={5}>
           <Stack spacing={1.3}>
-            <SectionOverline>How it works</SectionOverline>
+            <SectionOverline>Како функционира</SectionOverline>
             <Typography
               id="journey-heading"
               variant="h2"
               sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "2rem", md: "2.8rem" } }}
             >
-              Your path to recovery
+              Твојот пат до опоравување
             </Typography>
           </Stack>
 

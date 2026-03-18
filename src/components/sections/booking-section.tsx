@@ -33,17 +33,20 @@ type BookingFormState = {
   notes: string;
 };
 
-const bookingSteps = ["Choose therapist", "Pick a date", "Select time", "Your details"];
+const bookingSteps = ["Избери терапевт", "Избери датум", "Избери време", "Твои податоци"];
 
 const bookingStepDescriptions = [
-  "Pick your specialist",
-  "Available dates shown",
-  "30-minute sessions",
-  "Name, email & phone",
+  "Избери го специјалистот",
+  "Прикажани се достапни датуми",
+  "Сесии од 30 минути",
+  "Име, е-пошта и телефон",
 ];
 
+const STUDIO_MAP_EMBED_URL =
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2966.1230029006797!2d21.445350800000003!3d41.976168799999996!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xafa5a060219f9369%3A0x82c6d7745c5b8d0c!2sPhysio%20Patella!5e0!3m2!1sen!2smk!4v1773875321288!5m2!1sen!2smk";
+
 function formatDateLabel(dateKey: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("mk-MK", {
     weekday: "short",
     day: "2-digit",
     month: "short",
@@ -51,7 +54,7 @@ function formatDateLabel(dateKey: string) {
 }
 
 function formatTimeLabel(dateTimeIso: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("mk-MK", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -145,10 +148,10 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
 
     const params = new URLSearchParams({
       action: "TEMPLATE",
-      text: "Physio Patella Appointment",
+      text: "Термин во Physio Patella",
       dates: `${toGoogleCalendarDate(bookedSlot.starts_at)}/${toGoogleCalendarDate(bookedSlot.ends_at)}`,
-      details: `Appointment with ${selectedEmployee.name ?? "Physio Patella specialist"}`,
-      location: "Physio Patella Studio",
+      details: `Термин со ${selectedEmployee.name ?? "специјалист на Physio Patella"}`,
+      location: "Physio Patella Studio, Skopje",
     });
 
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
@@ -210,12 +213,12 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
       event.preventDefault();
 
       if (!selectedEmployee || !selectedSlot) {
-        setErrorMessage("Please choose a therapist, date, and time before confirming.");
+        setErrorMessage("Изберете терапевт, датум и време пред потврда.");
         return;
       }
 
       if (!formState.fullName.trim() || !formState.email.trim()) {
-        setErrorMessage("Full name and email are required.");
+        setErrorMessage("Името и е-пошта адресата се задолжителни.");
         return;
       }
 
@@ -245,7 +248,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
 
         if (!response.ok) {
           setErrorMessage(
-            data.error ?? "This slot was just taken. Please go back and choose another time.",
+            data.error ?? "Овој термин е веќе резервиран. Изберете друго време.",
           );
           return;
         }
@@ -256,7 +259,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
         setBookedSlot(data.slot ?? selectedSlot);
         setIsConfirmed(true);
       } catch {
-        setErrorMessage("This slot was just taken. Please go back and choose another time.");
+        setErrorMessage("Овој термин е веќе резервиран. Изберете друго време.");
       } finally {
         setIsSubmitting(false);
       }
@@ -279,20 +282,20 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
         <Stack spacing={4}>
           <Stack spacing={1.3}>
             <SectionOverline>
-              Schedule a visit
+              Закажи посета
             </SectionOverline>
             <Typography
               id="booking-heading"
               variant="h2"
               sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "2rem", md: "2.8rem" } }}
             >
-              Book your appointment
+              Закажи го твојот термин
             </Typography>
           </Stack>
 
           <Stack spacing={2} sx={{ display: { xs: "flex", md: "none" } }}>
             <Typography sx={{ color: "text.secondary", fontSize: "0.82rem" }}>
-              Step {activeStep + 1} of {bookingSteps.length} - {bookingSteps[activeStep]}
+              Чекор {activeStep + 1} од {bookingSteps.length} - {bookingSteps[activeStep]}
             </Typography>
             <LinearProgress
               variant="determinate"
@@ -431,14 +434,41 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                     variant="h3"
                     sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.6rem", md: "2rem" } }}
                   >
-                    You&apos;re booked in!
+                    Терминот е успешно закажан!
                   </Typography>
 
                   <Typography sx={{ color: "text.secondary", lineHeight: 1.7, fontSize: { xs: "1rem", md: "1.125rem" } }}>
-                    Your appointment with {selectedEmployee.name ?? "our specialist"} on{" "}
-                    {formatDateLabel(toDateKey(bookedSlot.starts_at))} at {formatTimeLabel(bookedSlot.starts_at)} is
-                    confirmed. We&apos;ll send a reminder to {formState.email}.
+                    Твојот термин со {selectedEmployee.name ?? "нашиот специјалист"} на{" "}
+                    {formatDateLabel(toDateKey(bookedSlot.starts_at))} во {formatTimeLabel(bookedSlot.starts_at)} е
+                    потврден. Ќе испратиме потсетник на {formState.email}.
                   </Typography>
+
+                  <Stack spacing={1} sx={{ width: "100%" }}>
+                    <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>
+                      Локација на студиото
+                    </Typography>
+                    <Box
+                      sx={{
+                        borderRadius: 1.5,
+                        overflow: "hidden",
+                        border: "1px solid",
+                        borderColor: "divider",
+                        width: "100%",
+                      }}
+                    >
+                      <Box
+                        component="iframe"
+                        src={STUDIO_MAP_EMBED_URL}
+                        width="100%"
+                        height="220"
+                        sx={{ border: 0, display: "block" }}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                        allowFullScreen
+                        title="Мапа до Physio Patella"
+                      />
+                    </Box>
+                  </Stack>
 
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={1.4}>
                     <Button
@@ -449,10 +479,10 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                       rel="noopener noreferrer"
                       sx={{ width: { xs: "100%", sm: "auto" }, minHeight: 44 }}
                     >
-                      Add to Google Calendar
+                      Додади во Google Calendar
                     </Button>
                     <Button variant="text" onClick={resetBookingFlow} sx={{ minHeight: 44 }}>
-                      Book another appointment
+                      Закажи друг термин
                     </Button>
                   </Stack>
                 </Stack>
@@ -473,7 +503,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                       fontSize: "0.75rem",
                     }}
                   >
-                    Step {activeStep + 1} of {bookingSteps.length}
+                    Чекор {activeStep + 1} од {bookingSteps.length}
                   </Typography>
 
                   {activeStep === 0 ? (
@@ -513,10 +543,10 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                                 </Avatar>
                                 <Stack spacing={0.4}>
                                   <Typography sx={{ fontWeight: 700, fontSize: "1rem" }}>
-                                    {employee.name ?? "Specialist"}
+                                    {employee.name ?? "Специјалист"}
                                   </Typography>
                                   <Typography sx={{ color: "text.secondary", fontSize: "0.82rem" }}>
-                                    {employee.specialization ?? "Physio therapy"}
+                                    {employee.specialization ?? "Физиотерапија"}
                                   </Typography>
                                 </Stack>
                               </Stack>
@@ -540,7 +570,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                       {selectedEmployeeId ? (
                         <Stack direction="row" justifyContent="flex-end" sx={{ pt: 1 }}>
                           <Button variant="contained" onClick={goNext} sx={{ minHeight: 44 }}>
-                            Next
+                            Следно
                           </Button>
                         </Stack>
                       ) : null}
@@ -553,12 +583,12 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                         variant="h3"
                         sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.3rem", md: "1.6rem" } }}
                       >
-                        Pick a date
+                        Избери датум
                       </Typography>
 
                       {availableDates.length === 0 ? (
                         <Typography sx={{ color: "text.secondary", fontSize: "1rem" }}>
-                          No available dates - check back soon.
+                          Нема слободни датуми во моментов.
                         </Typography>
                       ) : (
                         <Box
@@ -606,10 +636,10 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
 
                       <Stack direction="row" justifyContent="space-between" sx={{ pt: 1 }}>
                         <Button variant="text" onClick={goBack} sx={{ minHeight: 44 }}>
-                          Back
+                          Назад
                         </Button>
                         <Button variant="contained" disabled={!selectedDate} onClick={goNext} sx={{ minHeight: 44 }}>
-                          Next
+                          Следно
                         </Button>
                       </Stack>
                     </Stack>
@@ -621,12 +651,12 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                         variant="h3"
                         sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.3rem", md: "1.6rem" } }}
                       >
-                        Select a time
+                        Избери време
                       </Typography>
 
                       {availableTimes.length === 0 ? (
                         <Typography sx={{ color: "text.secondary", fontSize: "1rem" }}>
-                          No available times on this date.
+                          Нема слободни термини за овој датум.
                         </Typography>
                       ) : (
                         <Box
@@ -687,10 +717,10 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
 
                       <Stack direction="row" justifyContent="space-between" sx={{ pt: 1 }}>
                         <Button variant="text" onClick={goBack} sx={{ minHeight: 44 }}>
-                          Back
+                          Назад
                         </Button>
                         <Button variant="contained" disabled={!selectedSlotId} onClick={goNext} sx={{ minHeight: 44 }}>
-                          Next
+                          Следно
                         </Button>
                       </Stack>
                     </Stack>
@@ -702,7 +732,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                         variant="h3"
                         sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.3rem", md: "1.6rem" } }}
                       >
-                        Your details
+                        Твои податоци
                       </Typography>
 
                       <Box
@@ -713,7 +743,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                         }}
                       >
                         <TextField
-                          label="Full name"
+                          label="Име и презиме"
                           value={formState.fullName}
                           onChange={updateFormField("fullName")}
                           required
@@ -727,7 +757,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                         />
 
                         <TextField
-                          label="Email"
+                          label="Е-пошта"
                           type="email"
                           value={formState.email}
                           onChange={updateFormField("email")}
@@ -742,7 +772,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                         />
 
                         <TextField
-                          label="Phone"
+                          label="Телефон"
                           value={formState.phone}
                           onChange={updateFormField("phone")}
                           fullWidth
@@ -755,7 +785,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                         />
 
                         <TextField
-                          label="Notes"
+                          label="Забелешки"
                           value={formState.notes}
                           onChange={updateFormField("notes")}
                           multiline
@@ -774,8 +804,8 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                         <Alert
                           severity="error"
                           action={
-                            <Button color="inherit" size="small" onClick={() => setActiveStep(2)}>
-                              Go back
+                              <Button color="inherit" size="small" onClick={() => setActiveStep(2)}>
+                              Врати се назад
                             </Button>
                           }
                         >
@@ -792,7 +822,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                           fullWidth
                           sx={{ minHeight: 44 }}
                         >
-                          {isSubmitting ? "Confirming..." : "Confirm appointment"}
+                          {isSubmitting ? "Потврдуваме..." : "Потврди термин"}
                         </Button>
 
                         <Button
@@ -801,7 +831,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                           disabled={isSubmitting}
                           sx={{ alignSelf: "flex-start", minHeight: 44 }}
                         >
-                          Back
+                          Назад
                         </Button>
                       </Stack>
                     </Stack>
