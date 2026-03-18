@@ -1,17 +1,16 @@
-import { Box, Divider } from "@mui/material";
+import { Box } from "@mui/material";
 import BookingSection from "@/components/sections/booking-section";
 import DocumentsSection from "@/components/sections/documents-section";
 import EmployeesSection from "@/components/sections/employees-section";
 import HeroSection from "@/components/sections/hero-section";
 import ReviewsSection from "@/components/sections/reviews-section";
 import { createClient } from "@/lib/supabase/server";
-import type {
-  AppointmentSlot,
-  Employee,
-  EmployeeCertificate,
-  Review,
-  StudioDocument,
-} from "@/types/physio";
+import type { AppointmentSlot, Employee, Review, StudioDocument } from "@/types/physio";
+
+type EmployeeCertificateRow = {
+  title: string | null;
+  issuer: string | null;
+};
 
 type EmployeeRow = {
   id: string;
@@ -19,23 +18,20 @@ type EmployeeRow = {
   description: string | null;
   image_path: string | null;
   specialization: string | null;
-  employee_certificates: EmployeeCertificate[] | null;
+  employee_certificates: EmployeeCertificateRow[] | null;
 };
 
 type ReviewRow = {
-  id: string;
   client_name: string | null;
   rating: number | null;
   quote: string | null;
 };
 
 type DocumentRow = {
-  id: string;
   title: string | null;
   description: string | null;
   doc_type: string | null;
   file_path: string | null;
-  sort_order: number | null;
 };
 
 type SlotRow = {
@@ -43,36 +39,33 @@ type SlotRow = {
   employee_id: string;
   starts_at: string;
   ends_at: string;
-  is_available: boolean;
 };
 
 async function getPageData() {
   const supabase = await createClient();
-  const nowIso = new Date().toISOString();
 
   const [employeesResult, reviewsResult, documentsResult, slotsResult] = await Promise.all([
     supabase
       .from("employees")
       .select(
-        "id, name, description, image_path, specialization, employee_certificates(id, title, issuer, issued_on, file_path, sort_order)",
+        "id, name, description, image_path, specialization, employee_certificates(title, issuer)",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: true }),
     supabase
       .from("reviews")
-      .select("id, client_name, rating, quote")
+      .select("client_name, rating, quote")
       .eq("is_published", true)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(8),
     supabase
       .from("documents")
-      .select("id, title, description, doc_type, file_path, sort_order")
-      .eq("is_published", true)
-      .order("sort_order", { ascending: true }),
+      .select("title, description, doc_type, file_path")
+      .eq("is_published", true),
     supabase
       .from("appointment_slots")
-      .select("id, employee_id, starts_at, ends_at, is_available")
+      .select("id, employee_id, starts_at, ends_at")
       .eq("is_available", true)
-      .gte("starts_at", nowIso)
       .order("starts_at", { ascending: true }),
   ]);
 
@@ -83,15 +76,37 @@ async function getPageData() {
       description: employee.description,
       image_path: employee.image_path,
       specialization: employee.specialization,
-      certificates: (employee.employee_certificates ?? []).sort(
-        (firstCertificate, secondCertificate) =>
-          (firstCertificate.sort_order ?? 0) - (secondCertificate.sort_order ?? 0),
-      ),
+      certificates: (employee.employee_certificates ?? []).map((certificate, index) => ({
+        id: `${employee.id}-cert-${index}`,
+        title: certificate.title,
+        issuer: certificate.issuer,
+        issued_on: null,
+        file_path: null,
+        sort_order: index,
+      })),
     }),
   );
 
-  const reviews: Review[] = (reviewsResult.data as ReviewRow[] | null) ?? [];
-  const documents: StudioDocument[] = (documentsResult.data as DocumentRow[] | null) ?? [];
+  const reviews: Review[] = ((reviewsResult.data as ReviewRow[] | null) ?? []).map(
+    (review, index) => ({
+      id: `review-${index}`,
+      client_name: review.client_name,
+      rating: review.rating,
+      quote: review.quote,
+    }),
+  );
+
+  const documents: StudioDocument[] = ((documentsResult.data as DocumentRow[] | null) ?? []).map(
+    (document, index) => ({
+      id: `document-${index}`,
+      title: document.title,
+      description: document.description,
+      doc_type: document.doc_type,
+      file_path: document.file_path,
+      sort_order: index,
+    }),
+  );
+
   const slots: AppointmentSlot[] = (slotsResult.data as SlotRow[] | null) ?? [];
 
   return {
@@ -106,15 +121,31 @@ export default async function Home() {
   const { employees, reviews, documents, slots } = await getPageData();
 
   return (
-    <Box component="main">
+    <Box component="div">
       <HeroSection />
-      <Divider />
+      <Box
+        aria-hidden
+        sx={{
+          height: 1,
+          width: "100%",
+          background:
+            "linear-gradient(90deg, transparent, var(--mui-palette-divider), transparent)",
+        }}
+      />
       <EmployeesSection employees={employees} />
-      <Box id="blog" sx={{ scrollMarginTop: 120 }} />
+      <Box id="blog" sx={{ scrollMarginTop: { xs: "56px", md: "64px" } }} />
       <ReviewsSection reviews={reviews} />
-      <Box id="therapies" sx={{ scrollMarginTop: 120 }} />
+      <Box id="therapies" sx={{ scrollMarginTop: { xs: "56px", md: "64px" } }} />
       <DocumentsSection documents={documents} />
-      <Divider />
+      <Box
+        aria-hidden
+        sx={{
+          height: 1,
+          width: "100%",
+          background:
+            "linear-gradient(90deg, transparent, var(--mui-palette-divider), transparent)",
+        }}
+      />
       <BookingSection employees={employees} slots={slots} />
     </Box>
   );

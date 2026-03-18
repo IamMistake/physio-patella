@@ -17,19 +17,19 @@ export type Employee = {
 };
 
 export type Review = {
-  id: string;
+  id?: string;
   client_name: string | null;
   rating: number | null;
   quote: string | null;
 };
 
 export type StudioDocument = {
-  id: string;
+  id?: string;
   title: string | null;
   description: string | null;
   doc_type: string | null;
   file_path: string | null;
-  sort_order: number | null;
+  sort_order?: number | null;
 };
 
 export type AppointmentSlot = {
@@ -37,5 +37,4 @@ export type AppointmentSlot = {
   employee_id: string;
   starts_at: string;
   ends_at: string;
-  is_available: boolean;
 };

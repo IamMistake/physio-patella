@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Serif_Display, Instrument_Sans } from "next/font/google";
+import { Box } from "@mui/material";
 import Navbar from "@/components/layout/navbar";
 import AppThemeProvider from "@/components/providers/app-theme-provider";
 import "./globals.css";
@@ -29,8 +30,20 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${dmSerif.variable} ${instrumentSans.variable} antialiased`}>
         <AppThemeProvider>
+          <a className="skip-link" href="#main-content">
+            Skip to main content
+          </a>
           <Navbar />
-          {children}
+          <Box
+            component="main"
+            id="main-content"
+            sx={{
+              mt: { xs: "56px", md: "64px" },
+              pb: "env(safe-area-inset-bottom)",
+            }}
+          >
+            {children}
+          </Box>
         </AppThemeProvider>
       </body>
     </html>

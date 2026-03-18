@@ -1,34 +1,37 @@
-import StarRoundedIcon from "@mui/icons-material/StarRounded";
-import {
-  Box,
-  Button,
-  Container,
-  Divider,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
+import Image from "next/image";
+import { Box, Button, Container, Stack, Typography } from "@mui/material";
+import SectionOverline from "@/components/ui/section-overline";
 
-const trustStats = ["12+ years experience", "1,200+ patients", "5-star rated"];
+const trustStats = [
+  { value: "12+", label: "years experience" },
+  { value: "1,200+", label: "patients" },
+  { value: "5-star", label: "rated" },
+];
 
 export default function HeroSection() {
   return (
     <Box
       id="home"
       component="section"
+      aria-labelledby="hero-heading"
       sx={{
+        scrollMarginTop: { xs: "56px", md: "64px" },
         minHeight: "100dvh",
         display: "flex",
         alignItems: "center",
-        py: { xs: 15, md: 18 },
+        py: { xs: 6, md: 10, lg: 16 },
+        background: {
+          xs: "var(--mui-palette-background-default)",
+          md: "linear-gradient(90deg, var(--mui-palette-background-default) 55%, color-mix(in srgb, var(--mui-palette-primary-main) 10%, transparent) 55%)",
+        },
       }}
     >
-      <Container maxWidth="xl">
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "1.45fr 1fr" },
-            gap: { xs: 8, md: 6 },
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            gap: { xs: 5, md: 6, lg: 8 },
             alignItems: "center",
             "@keyframes heroFadeUp": {
               from: {
@@ -50,47 +53,32 @@ export default function HeroSection() {
                 transform: "scale(1)",
               },
             },
-            "@keyframes heroFloat": {
-              "0%, 100%": {
-                transform: "translateY(0)",
-              },
-              "50%": {
-                transform: "translateY(-12px)",
-              },
-            },
           }}
         >
           <Stack
-            spacing={4}
+            spacing={3}
             sx={{
-              opacity: 0,
-              transform: "translateY(24px)",
-              animation: "heroFadeUp 0.6s ease forwards",
-              "@media (prefers-reduced-motion: reduce)": {
-                opacity: 1,
-                transform: "none",
-                animation: "none",
+              width: { xs: "100%", md: "60%" },
+              opacity: 1,
+              transform: "none",
+              "@media (prefers-reduced-motion: no-preference)": {
+                opacity: 0,
+                transform: "translateY(24px)",
+                animation: "heroFadeUp 0.6s ease forwards",
               },
             }}
           >
-            <Typography
-              sx={{
-                textTransform: "uppercase",
-                letterSpacing: 2.1,
-                color: "primary.main",
-                fontWeight: 700,
-                fontSize: 13,
-              }}
-            >
+            <SectionOverline withLeadingLine letterSpacing="0.18em">
               Physiotherapy & Chiropractic
-            </Typography>
+            </SectionOverline>
 
             <Typography
+              id="hero-heading"
               variant="h1"
               sx={{
                 maxWidth: 780,
-                lineHeight: 1,
-                fontSize: { xs: "2.75rem", md: "4.5rem" },
+                lineHeight: 1.05,
+                fontSize: { xs: "2.6rem", md: "3.8rem", lg: "5rem" },
               }}
             >
               Move without pain. Live without limits.
@@ -101,15 +89,28 @@ export default function HeroSection() {
                 color: "text.secondary",
                 fontSize: { xs: "1rem", md: "1.125rem" },
                 lineHeight: 1.7,
-                maxWidth: 500,
+                maxWidth: 480,
               }}
             >
-              Expert physiotherapy and chiropractic care tailored to your body.
-              Book a session with our specialist team today.
+              Expert physiotherapy and chiropractic care tailored to your body. Book a
+              session with our specialist team today.
             </Typography>
 
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.7}>
-              <Button variant="contained" size="large" href="#booking" sx={{ px: 4.2 }}>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+              <Button
+                variant="contained"
+                size="large"
+                href="#booking"
+                sx={{
+                  width: { xs: "100%", sm: "auto" },
+                  minHeight: 44,
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: 999,
+                  boxShadow:
+                    "0 4px 20px color-mix(in srgb, var(--mui-palette-primary-main) 35%, transparent)",
+                }}
+              >
                 Book an appointment
               </Button>
               <Button
@@ -117,117 +118,82 @@ export default function HeroSection() {
                 color="secondary"
                 size="large"
                 href="#team"
-                sx={{ px: 4.2 }}
+                sx={{
+                  width: { xs: "100%", sm: "auto" },
+                  minHeight: 44,
+                  px: 3,
+                  py: 1.5,
+                  borderRadius: 999,
+                  boxShadow: "none",
+                }}
               >
                 Meet the team
               </Button>
             </Stack>
 
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              divider={<Divider orientation="vertical" flexItem sx={{ borderColor: "divider" }} />}
-              sx={{
-                width: "fit-content",
-                border: "1px solid",
-                borderColor: "divider",
-                borderRadius: 999,
-                px: 2,
-                py: 1.1,
-                bgcolor: "background.paper",
-              }}
-            >
+            <Stack direction="row" spacing={1.5} alignItems="center" useFlexGap flexWrap="wrap">
               {trustStats.map((stat, index) => (
-                <Typography
-                  key={stat}
-                  sx={{
-                    fontSize: 12,
-                    color: "text.secondary",
-                    px: { sm: index === 0 ? 0 : 1.7 },
-                    py: { xs: 0.4, sm: 0 },
-                    textAlign: { xs: "left", sm: "center" },
-                  }}
-                >
-                  {stat}
-                </Typography>
+                <Stack key={stat.label} direction="row" spacing={1.5} alignItems="center">
+                  <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+                    <Box component="span" sx={{ color: "primary.main", fontWeight: 700, fontSize: "0.95rem", mr: 0.6 }}>
+                      {stat.value}
+                    </Box>
+                    {stat.label}
+                  </Typography>
+
+                  {index < trustStats.length - 1 ? (
+                    <Box sx={{ width: 1, height: 20, bgcolor: "divider" }} />
+                  ) : null}
+                </Stack>
               ))}
             </Stack>
           </Stack>
 
-          <Box
+          <Stack
             sx={{
-              opacity: 0,
-              transform: "scale(0.92)",
-              animation: "heroScaleIn 0.8s ease 0.2s forwards",
-              "@media (prefers-reduced-motion: reduce)": {
-                opacity: 1,
-                transform: "none",
-                animation: "none",
+              width: { xs: "100%", md: "40%" },
+              alignItems: { xs: "center", md: "stretch" },
+              opacity: 1,
+              transform: "none",
+              "@media (prefers-reduced-motion: no-preference)": {
+                opacity: 0,
+                transform: "scale(0.92)",
+                animation: "heroScaleIn 0.8s ease 0.2s forwards",
               },
             }}
           >
             <Box
               sx={{
                 position: "relative",
-                borderRadius: "40% 60% 60% 40%",
-                minHeight: { xs: 420, md: 560 },
-                p: { xs: 2.5, md: 3.5 },
+                width: "100%",
+                maxWidth: { xs: 340, sm: 420, md: "none" },
+                minHeight: { xs: 300, sm: 420, md: 560 },
+                borderRadius: "24px 24px 80px 24px",
                 overflow: "hidden",
-                "&::before": {
-                  content: '""',
+                border: "1px solid",
+                borderColor: "divider",
+                boxShadow: 4,
+              }}
+            >
+              <Image
+                src="https://images.unsplash.com/photo-1706353399656-210cca727a33?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                alt=""
+                fill
+                priority
+                sizes="(max-width: 900px) 100vw, 40vw"
+                style={{ objectFit: "cover", objectPosition: "80% center" }}
+              />
+              <Box
+                aria-hidden
+                sx={{
                   position: "absolute",
                   inset: 0,
                   bgcolor: "primary.main",
                   opacity: 0.08,
-                },
-                animation: "heroFloat 6s ease-in-out infinite",
-                "@media (prefers-reduced-motion: reduce)": {
-                  animation: "none",
-                },
-              }}
-            >
-              <Box
-                sx={{
-                  position: "relative",
-                  zIndex: 1,
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: "30px",
-                  bgcolor: "primary.light",
-                  opacity: 0.3,
-                  border: "1px solid",
-                  borderColor: "primary.main",
                 }}
               />
-
-              <Paper
-                sx={{
-                  position: "absolute",
-                  zIndex: 2,
-                  left: { xs: 14, md: 24 },
-                  bottom: { xs: 18, md: 26 },
-                  borderRadius: 999,
-                  py: 1,
-                  px: 1.8,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.8,
-                  bgcolor: "background.paper",
-                  border: "1px solid",
-                  borderColor: "primary.main",
-                }}
-              >
-                <StarRoundedIcon
-                  sx={{
-                    fontSize: 17,
-                    color: "primary.main",
-                  }}
-                />
-                <Typography sx={{ fontWeight: 700, color: "text.primary", fontSize: 13 }}>
-                  4.9 - 200+ reviews
-                </Typography>
-              </Paper>
             </Box>
-          </Box>
+          </Stack>
         </Box>
       </Container>
     </Box>

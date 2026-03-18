@@ -1,12 +1,20 @@
+"use client";
+
+import * as React from "react";
+import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
+import ChevronRightRoundedIcon from "@mui/icons-material/ChevronRightRounded";
 import Image from "next/image";
 import {
+  Avatar,
   Box,
   Chip,
   Container,
+  IconButton,
   Paper,
   Stack,
   Typography,
 } from "@mui/material";
+import SectionOverline from "@/components/ui/section-overline";
 import type { Employee } from "@/types/physio";
 
 type EmployeesSectionProps = {
@@ -25,36 +33,83 @@ function resolveImagePath(path: string | null) {
   return `/${path}`;
 }
 
+function getInitials(name: string | null) {
+  if (!name) {
+    return "PP";
+  }
+
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 export default function EmployeesSection({ employees }: EmployeesSectionProps) {
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollCards = (direction: "left" | "right") => {
+    const container = scrollRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const amount = direction === "left" ? -304 : 304;
+    container.scrollBy({ left: amount, behavior: "smooth" });
+  };
+
   return (
-    <Box id="team" component="section" sx={{ py: { xs: 15, md: 18 } }}>
-      <Container maxWidth="xl">
-        <Stack spacing={5}>
-          <Stack spacing={1.3}>
+    <Box
+      id="team"
+      component="section"
+      aria-labelledby="team-heading"
+      sx={{
+        scrollMarginTop: { xs: "56px", md: "64px" },
+        py: { xs: 6, md: 10, lg: 16 },
+      }}
+    >
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+        <Stack spacing={4}>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-end" spacing={2}>
+            <Stack spacing={1.3}>
+              <SectionOverline>Our specialists</SectionOverline>
+              <Typography
+                id="team-heading"
+                variant="h2"
+                sx={{
+                  fontFamily: "var(--font-dm-serif), serif",
+                  fontSize: { xs: "2rem", md: "2.8rem" },
+                }}
+              >
+                Hands that heal
+              </Typography>
+            </Stack>
+
             <Typography
               sx={{
-                textTransform: "uppercase",
-                letterSpacing: 2,
-                color: "primary.main",
-                fontWeight: 700,
-                fontSize: 12,
+                display: { xs: "none", md: "block" },
+                fontSize: "0.75rem",
+                color: "text.secondary",
+                whiteSpace: "nowrap",
               }}
             >
-              Our specialists
-            </Typography>
-            <Typography variant="h2" sx={{ fontSize: { xs: "2.2rem", md: "3.4rem" } }}>
-              Hands that heal
+              scroll to explore -&gt;
             </Typography>
           </Stack>
 
           <Box sx={{ position: "relative" }}>
             <Box
+              ref={scrollRef}
               sx={{
                 display: "flex",
                 gap: 3,
                 overflowX: "auto",
                 scrollSnapType: "x mandatory",
                 scrollbarWidth: "none",
+                WebkitOverflowScrolling: "touch",
+                scrollBehavior: "smooth",
                 pr: { xs: 4, md: 0 },
                 pb: 1,
                 "&::-webkit-scrollbar": {
@@ -71,8 +126,9 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                   <Paper
                     key={employee.id}
                     sx={{
-                      width: 280,
-                      height: 420,
+                      width: { xs: "80vw", md: "280px" },
+                      maxWidth: 320,
+                      height: 430,
                       flexShrink: 0,
                       overflow: "hidden",
                       borderRadius: 2.5,
@@ -82,7 +138,9 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                       bgcolor: "background.paper",
                       boxShadow: "none",
                       transition: "transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease",
-                      animation: `employeeReveal 0.5s ease ${employeeIndex * 0.08}s both`,
+                      "@media (prefers-reduced-motion: no-preference)": {
+                        animation: `employeeReveal 0.5s ease ${employeeIndex * 0.08}s both`,
+                      },
                       "@keyframes employeeReveal": {
                         from: {
                           opacity: 0,
@@ -94,9 +152,9 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                         },
                       },
                       "&:hover": {
-                        transform: "translateY(-6px)",
-                        boxShadow: 8,
-                        borderColor: "primary.main",
+                        transform: { md: "translateY(-6px)" },
+                        boxShadow: { md: 8 },
+                        borderColor: { md: "primary.main" },
                       },
                     }}
                   >
@@ -106,50 +164,73 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                         height: "55%",
                         borderBottom: "1px solid",
                         borderColor: "divider",
-                        bgcolor: "primary.light",
+                        bgcolor: "primary.main",
+                        opacity: imagePath ? 1 : 0.15,
+                        backgroundImage: imagePath
+                          ? "none"
+                          : "repeating-linear-gradient(45deg, transparent, transparent 10px, color-mix(in srgb, var(--mui-palette-primary-main) 25%, transparent) 10px, color-mix(in srgb, var(--mui-palette-primary-main) 25%, transparent) 20px)",
                       }}
                     >
                       {imagePath ? (
                         <Image
                           src={imagePath}
-                          alt={employee.name ?? "Physio Patella specialist"}
+                          alt={`Photo of ${employee.name ?? "Physio Patella specialist"}`}
                           fill
-                          sizes="280px"
+                          sizes="(max-width: 600px) 80vw, 280px"
+                          loading={employeeIndex === 0 ? "eager" : "lazy"}
+                          priority={employeeIndex === 0}
                           unoptimized
                           style={{ objectFit: "cover" }}
                         />
-                      ) : null}
-
-                      {employee.specialization ? (
-                        <Chip
-                          label={employee.specialization}
-                          size="small"
-                          color="primary"
+                      ) : (
+                        <Box
                           sx={{
                             position: "absolute",
-                            top: 12,
-                            right: 12,
-                            fontSize: 11,
-                            fontWeight: 600,
+                            inset: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
                           }}
-                        />
-                      ) : null}
+                        >
+                          <Avatar
+                            sx={{
+                              width: 96,
+                              height: 96,
+                              fontSize: "2rem",
+                              bgcolor: "primary.main",
+                              color: "primary.contrastText",
+                            }}
+                          >
+                            {getInitials(employee.name)}
+                          </Avatar>
+                        </Box>
+                      )}
                     </Box>
 
-                    <Stack spacing={1.7} sx={{ height: "45%", p: 2.5 }}>
+                    <Stack spacing={1.25} sx={{ height: "45%", p: 2.5 }}>
                       <Typography
                         sx={{
                           fontFamily: "var(--font-dm-serif), serif",
-                          fontSize: 18,
+                          fontSize: { xs: "1.1rem", md: "1.25rem" },
                           lineHeight: 1.2,
                         }}
                       >
                         {employee.name ?? "Physio Patella Specialist"}
                       </Typography>
 
+                      {employee.specialization ? (
+                        <Chip
+                          label={employee.specialization}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                          sx={{ width: "fit-content", minHeight: 24, fontSize: "0.75rem" }}
+                        />
+                      ) : null}
+
                       <Typography
                         sx={{
-                          fontSize: 13,
+                          fontSize: "0.82rem",
                           color: "text.secondary",
                           lineHeight: 1.6,
                           display: "-webkit-box",
@@ -161,7 +242,7 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                         {employee.description ?? "Personalized care focused on recovery and long-term mobility."}
                       </Typography>
 
-                      <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
+                      <Stack direction="row" useFlexGap flexWrap="wrap" spacing={0.5} sx={{ maxWidth: "100%" }}>
                         {visibleCertificates.map((certificate) => (
                           <Chip
                             key={certificate.id}
@@ -171,11 +252,17 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                             sx={{
                               borderColor: "divider",
                               color: "text.secondary",
-                              fontSize: 11,
+                              fontSize: "0.75rem",
+                              borderRadius: "6px",
+                              height: 24,
                               maxWidth: "100%",
+                              transition: "background-color 0.2s ease",
                               "& .MuiChip-label": {
                                 overflow: "hidden",
                                 textOverflow: "ellipsis",
+                              },
+                              "&:hover": {
+                                bgcolor: "action.hover",
                               },
                             }}
                           />
@@ -186,7 +273,7 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                             label={`+${hiddenCount} more`}
                             size="small"
                             variant="outlined"
-                            sx={{ borderColor: "divider", fontSize: 11 }}
+                            sx={{ borderColor: "divider", fontSize: "0.75rem", borderRadius: "6px", height: 24 }}
                           />
                         ) : null}
                       </Stack>
@@ -195,6 +282,64 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                 );
               })}
             </Box>
+
+            <Stack
+              direction="row"
+              spacing={1}
+              sx={{
+                display: { xs: "none", md: "flex" },
+                position: "absolute",
+                top: "25%",
+                left: -22,
+                right: -22,
+                transform: "translateY(-50%)",
+                justifyContent: "space-between",
+                pointerEvents: "none",
+              }}
+            >
+              <IconButton
+                onClick={() => scrollCards("left")}
+                aria-label="Scroll specialists left"
+                sx={{
+                  pointerEvents: "auto",
+                  width: 44,
+                  height: 44,
+                  bgcolor: "background.paper",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    borderColor: "transparent",
+                  },
+                }}
+              >
+                <ChevronLeftRoundedIcon />
+              </IconButton>
+              <IconButton
+                onClick={() => scrollCards("right")}
+                aria-label="Scroll specialists right"
+                sx={{
+                  pointerEvents: "auto",
+                  width: 44,
+                  height: 44,
+                  bgcolor: "background.paper",
+                  border: "1px solid",
+                  borderColor: "divider",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                  transition: "all 0.2s ease",
+                  "&:hover": {
+                    bgcolor: "primary.main",
+                    color: "primary.contrastText",
+                    borderColor: "transparent",
+                  },
+                }}
+              >
+                <ChevronRightRoundedIcon />
+              </IconButton>
+            </Stack>
 
             <Box
               aria-hidden

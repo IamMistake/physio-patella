@@ -8,13 +8,16 @@ import {
   Avatar,
   Box,
   Button,
+  CircularProgress,
+  Container,
+  LinearProgress,
   Paper,
   Stack,
   TextField,
   ToggleButton,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
+import SectionOverline from "@/components/ui/section-overline";
 import { createClient } from "@/lib/supabase/client";
 import type { AppointmentSlot, Employee } from "@/types/physio";
 
@@ -30,11 +33,13 @@ type BookingFormState = {
   notes: string;
 };
 
-const bookingSteps = [
-  "Choose therapist",
-  "Pick a date",
-  "Select time",
-  "Your details",
+const bookingSteps = ["Choose therapist", "Pick a date", "Select time", "Your details"];
+
+const bookingStepDescriptions = [
+  "Pick your specialist",
+  "Available dates shown",
+  "30-minute sessions",
+  "Name, email & phone",
 ];
 
 function formatDateLabel(dateKey: string) {
@@ -149,6 +154,8 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   }, [bookedSlot, selectedEmployee]);
 
+  const progressValue = ((activeStep + 1) / bookingSteps.length) * 100;
+
   const updateFormField = React.useCallback(
     (field: keyof BookingFormState) =>
       (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -244,9 +251,8 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
         );
         setBookedSlot(selectedSlot);
         setIsConfirmed(true);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unable to confirm booking.";
-        setErrorMessage(message);
+      } catch {
+        setErrorMessage("This slot was just taken. Please go back and choose another time.");
       } finally {
         setIsSubmitting(false);
       }
@@ -255,39 +261,56 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
   );
 
   return (
-    <Box id="booking" component="section" sx={{ py: { xs: 15, md: 18 } }}>
-      <Box sx={{ maxWidth: 1440, mx: "auto", px: { xs: 2.5, md: 4 } }}>
-        <Stack spacing={5}>
+    <Box
+      id="booking"
+      component="section"
+      aria-labelledby="booking-heading"
+      sx={{
+        scrollMarginTop: { xs: "56px", md: "64px" },
+        py: { xs: 6, md: 10, lg: 16 },
+      }}
+    >
+      <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
+        <Stack spacing={4}>
           <Stack spacing={1.3}>
-            <Typography
-              sx={{
-                textTransform: "uppercase",
-                letterSpacing: 2,
-                color: "primary.main",
-                fontWeight: 700,
-                fontSize: 12,
-              }}
-            >
+            <SectionOverline>
               Schedule a visit
-            </Typography>
-            <Typography variant="h2" sx={{ fontSize: { xs: "2.2rem", md: "3.4rem" } }}>
+            </SectionOverline>
+            <Typography
+              id="booking-heading"
+              variant="h2"
+              sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "2rem", md: "2.8rem" } }}
+            >
               Book your appointment
             </Typography>
+          </Stack>
+
+          <Stack spacing={2} sx={{ display: { xs: "flex", md: "none" } }}>
+            <Typography sx={{ color: "text.secondary", fontSize: "0.82rem" }}>
+              Step {activeStep + 1} of {bookingSteps.length} - {bookingSteps[activeStep]}
+            </Typography>
+            <LinearProgress
+              variant="determinate"
+              value={isConfirmed ? 100 : progressValue}
+              sx={{ borderRadius: 99, height: 8 }}
+            />
           </Stack>
 
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", md: "0.36fr 0.64fr" },
-              gap: { xs: 4, md: 5 },
+              gridTemplateColumns: { xs: "1fr", md: "0.28fr 0.72fr", lg: "0.34fr 0.66fr" },
+              gap: { xs: 3, md: 4 },
             }}
           >
             <Paper
+              role="list"
               sx={{
+                display: { xs: "none", md: "block" },
                 border: "1px solid",
                 borderColor: "divider",
                 borderRadius: 2,
-                p: { xs: 2.5, md: 3 },
+                p: { md: 2.5, lg: 3 },
                 height: "fit-content",
               }}
             >
@@ -297,45 +320,69 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                   const isCurrent = stepIndex === activeStep && !isConfirmed;
 
                   return (
-                    <Box key={step} sx={{ display: "grid", gridTemplateColumns: "24px 1fr", gap: 1.4 }}>
+                    <Box
+                      key={step}
+                      role="listitem"
+                      aria-current={isCurrent ? "step" : undefined}
+                      sx={{ display: "grid", gridTemplateColumns: "32px 1fr", gap: 1.5 }}
+                    >
                       <Stack alignItems="center" spacing={0.8}>
                         <Box
-                          sx={(theme) => ({
-                            width: 24,
-                            height: 24,
+                          sx={{
+                            width: 32,
+                            height: 32,
                             borderRadius: "50%",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            fontSize: 12,
-                            fontWeight: 700,
-                            border: "1px solid",
+                            fontSize: "0.82rem",
+                            fontWeight: 600,
+                            border: "1.5px solid",
                             borderColor: isCompleted || isCurrent ? "primary.main" : "divider",
-                            bgcolor:
-                              isCompleted || isCurrent
-                                ? alpha(theme.palette.primary.main, 0.95)
+                            bgcolor: isCurrent
+                              ? "primary.main"
+                              : isCompleted
+                                ? "color-mix(in srgb, var(--mui-palette-primary-main) 20%, transparent)"
                                 : "transparent",
-                            color: isCompleted || isCurrent ? "primary.contrastText" : "text.secondary",
-                            transition: "all 0.25s ease",
-                          })}
+                            color: isCurrent
+                              ? "primary.contrastText"
+                              : isCompleted
+                                ? "primary.main"
+                                : "text.secondary",
+                          }}
                         >
-                          {isCompleted ? <CheckRoundedIcon sx={{ fontSize: 14 }} /> : stepIndex + 1}
+                          {isCompleted ? <CheckRoundedIcon sx={{ fontSize: 16 }} /> : stepIndex + 1}
                         </Box>
-
                         {stepIndex < bookingSteps.length - 1 ? (
-                          <Box sx={{ width: 1, height: 22, bgcolor: "divider" }} />
+                          <Box
+                            sx={{
+                              width: 2,
+                              height: 24,
+                              bgcolor: stepIndex < activeStep ? "primary.main" : "divider",
+                            }}
+                          />
                         ) : null}
                       </Stack>
 
-                      <Typography
-                        sx={{
-                          pt: 0.1,
-                          color: isCurrent ? "primary.main" : "text.secondary",
-                          fontWeight: isCurrent ? 700 : 500,
-                        }}
-                      >
-                        {step}
-                      </Typography>
+                      <Stack spacing={0.4}>
+                        <Typography
+                          sx={{
+                            pt: 0.1,
+                            color: isCurrent
+                              ? "text.primary"
+                              : isCompleted
+                                ? "text.secondary"
+                                : "text.disabled",
+                            fontWeight: isCurrent ? 600 : 500,
+                            fontSize: "0.9rem",
+                          }}
+                        >
+                          {step}
+                        </Typography>
+                        <Typography sx={{ fontSize: "0.625rem", color: "text.disabled" }}>
+                          {bookingStepDescriptions[stepIndex]}
+                        </Typography>
+                      </Stack>
                     </Box>
                   );
                 })}
@@ -346,8 +393,10 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
               sx={{
                 border: "1px solid",
                 borderColor: "divider",
-                borderRadius: 2,
-                p: { xs: 2.5, md: 4 },
+                borderRadius: 2.5,
+                p: { xs: 3, md: 4 },
+                bgcolor: "color-mix(in srgb, var(--mui-palette-background-paper) 60%, transparent)",
+                backdropFilter: "blur(8px)",
                 minHeight: 520,
                 "@keyframes bookingPanelIn": {
                   from: {
@@ -362,18 +411,20 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
               }}
             >
               {isConfirmed && bookedSlot && selectedEmployee ? (
-                <Stack spacing={2.2} alignItems="flex-start" sx={{ maxWidth: 560 }}>
+                <Stack spacing={2.2} alignItems={{ xs: "stretch", md: "flex-start" }} sx={{ maxWidth: 560 }}>
                   <CheckCircleOutlineRoundedIcon sx={{ fontSize: 64, color: "success.main" }} />
 
-                  <Typography variant="h5" sx={{ fontFamily: "var(--font-dm-serif), serif" }}>
+                  <Typography
+                    variant="h3"
+                    sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.6rem", md: "2rem" } }}
+                  >
                     You&apos;re booked in!
                   </Typography>
 
-                  <Typography sx={{ color: "text.secondary", lineHeight: 1.7 }}>
+                  <Typography sx={{ color: "text.secondary", lineHeight: 1.7, fontSize: { xs: "1rem", md: "1.125rem" } }}>
                     Your appointment with {selectedEmployee.name ?? "our specialist"} on{" "}
-                    {formatDateLabel(toDateKey(bookedSlot.starts_at))} at{" "}
-                    {formatTimeLabel(bookedSlot.starts_at)} is confirmed. We&apos;ll send a
-                    reminder to {formState.email}.
+                    {formatDateLabel(toDateKey(bookedSlot.starts_at))} at {formatTimeLabel(bookedSlot.starts_at)} is
+                    confirmed. We&apos;ll send a reminder to {formState.email}.
                   </Typography>
 
                   <Stack direction={{ xs: "column", sm: "row" }} spacing={1.4}>
@@ -383,19 +434,30 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                       href={googleCalendarLink}
                       target="_blank"
                       rel="noopener noreferrer"
+                      sx={{ width: { xs: "100%", sm: "auto" }, minHeight: 44 }}
                     >
                       Add to Google Calendar
                     </Button>
-                    <Button variant="text" onClick={resetBookingFlow}>
+                    <Button variant="text" onClick={resetBookingFlow} sx={{ minHeight: 44 }}>
                       Book another appointment
                     </Button>
                   </Stack>
                 </Stack>
               ) : (
-                <Box key={activeStep} sx={{ animation: "bookingPanelIn 0.25s ease" }}>
+                <Box
+                  key={activeStep}
+                  sx={{
+                    "@media (prefers-reduced-motion: no-preference)": {
+                      animation: "bookingPanelIn 0.25s ease",
+                    },
+                  }}
+                >
                   {activeStep === 0 ? (
                     <Stack spacing={2.1}>
-                      <Typography variant="h5" sx={{ fontFamily: "var(--font-dm-serif), serif" }}>
+                      <Typography
+                        variant="h3"
+                        sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.3rem", md: "1.6rem" } }}
+                      >
                         Choose your therapist
                       </Typography>
 
@@ -413,35 +475,46 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                             <Paper
                               key={employee.id}
                               onClick={() => handleEmployeeSelect(employee.id)}
-                              sx={(theme) => ({
+                              sx={{
+                                position: "relative",
                                 borderRadius: 1.5,
-                                p: 2,
+                                p: 2.5,
                                 border: "1px solid",
                                 borderColor: isSelected ? "primary.main" : "divider",
-                                bgcolor: isSelected
-                                  ? alpha(theme.palette.primary.main, 0.06)
-                                  : "background.paper",
+                                bgcolor: isSelected ? "action.hover" : "background.paper",
                                 cursor: "pointer",
                                 transition: "all 0.25s ease",
                                 "&:hover": {
                                   borderColor: "primary.main",
-                                  transform: "translateY(-2px)",
+                                  transform: { md: "translateY(-2px)" },
                                 },
-                              })}
+                              }}
                             >
                               <Stack direction="row" spacing={1.4} alignItems="center">
                                 <Avatar sx={{ width: 48, height: 48, bgcolor: "primary.main" }}>
                                   {getInitials(employee.name)}
                                 </Avatar>
                                 <Stack spacing={0.4}>
-                                  <Typography sx={{ fontWeight: 700 }}>
+                                  <Typography sx={{ fontWeight: 700, fontSize: "1rem" }}>
                                     {employee.name ?? "Specialist"}
                                   </Typography>
-                                  <Typography sx={{ color: "text.secondary", fontSize: 13 }}>
+                                  <Typography sx={{ color: "text.secondary", fontSize: "0.82rem" }}>
                                     {employee.specialization ?? "Physio therapy"}
                                   </Typography>
                                 </Stack>
                               </Stack>
+
+                              {isSelected ? (
+                                <CheckRoundedIcon
+                                  sx={{
+                                    position: "absolute",
+                                    top: 10,
+                                    right: 10,
+                                    fontSize: 18,
+                                    color: "primary.main",
+                                  }}
+                                />
+                              ) : null}
                             </Paper>
                           );
                         })}
@@ -449,7 +522,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
 
                       {selectedEmployeeId ? (
                         <Stack direction="row" justifyContent="flex-end" sx={{ pt: 1 }}>
-                          <Button variant="contained" onClick={goNext}>
+                          <Button variant="contained" onClick={goNext} sx={{ minHeight: 44 }}>
                             Next
                           </Button>
                         </Stack>
@@ -459,19 +532,26 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
 
                   {activeStep === 1 ? (
                     <Stack spacing={2.1}>
-                      <Typography variant="h5" sx={{ fontFamily: "var(--font-dm-serif), serif" }}>
+                      <Typography
+                        variant="h3"
+                        sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.3rem", md: "1.6rem" } }}
+                      >
                         Pick a date
                       </Typography>
 
                       {availableDates.length === 0 ? (
-                        <Typography sx={{ color: "text.secondary" }}>
+                        <Typography sx={{ color: "text.secondary", fontSize: "1rem" }}>
                           No available dates - check back soon.
                         </Typography>
                       ) : (
                         <Box
                           sx={{
                             display: "grid",
-                            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, minmax(0, 1fr))" },
+                            gridTemplateColumns: {
+                              xs: "repeat(2, minmax(0, 1fr))",
+                              sm: "repeat(3, minmax(0, 1fr))",
+                              md: "repeat(4, minmax(0, 1fr))",
+                            },
                             gap: 1.2,
                           }}
                         >
@@ -484,20 +564,21 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                                 value={dateKey}
                                 selected={isSelected}
                                 onChange={() => handleDateSelect(dateKey)}
-                                sx={(theme) => ({
+                                sx={{
                                   borderRadius: 999,
                                   borderColor: "divider",
                                   textTransform: "none",
                                   color: "text.secondary",
+                                  minHeight: 44,
                                   "&.Mui-selected": {
                                     bgcolor: "primary.main",
                                     color: "primary.contrastText",
                                     borderColor: "primary.main",
                                   },
                                   "&.Mui-selected:hover": {
-                                    bgcolor: theme.palette.primary.dark,
+                                    bgcolor: "primary.dark",
                                   },
-                                })}
+                                }}
                               >
                                 {formatDateLabel(dateKey)}
                               </ToggleButton>
@@ -507,10 +588,10 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                       )}
 
                       <Stack direction="row" justifyContent="space-between" sx={{ pt: 1 }}>
-                        <Button variant="text" onClick={goBack}>
+                        <Button variant="text" onClick={goBack} sx={{ minHeight: 44 }}>
                           Back
                         </Button>
-                        <Button variant="contained" disabled={!selectedDate} onClick={goNext}>
+                        <Button variant="contained" disabled={!selectedDate} onClick={goNext} sx={{ minHeight: 44 }}>
                           Next
                         </Button>
                       </Stack>
@@ -519,53 +600,79 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
 
                   {activeStep === 2 ? (
                     <Stack spacing={2.1}>
-                      <Typography variant="h5" sx={{ fontFamily: "var(--font-dm-serif), serif" }}>
+                      <Typography
+                        variant="h3"
+                        sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.3rem", md: "1.6rem" } }}
+                      >
                         Select a time
                       </Typography>
 
                       {availableTimes.length === 0 ? (
-                        <Typography sx={{ color: "text.secondary" }}>
+                        <Typography sx={{ color: "text.secondary", fontSize: "1rem" }}>
                           No available times on this date.
                         </Typography>
                       ) : (
                         <Box
                           sx={{
                             display: "grid",
-                            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                            gridTemplateColumns: { xs: "repeat(3, minmax(0, 1fr))", sm: "repeat(4, minmax(0, 1fr))" },
                             gap: 1.2,
                           }}
                         >
-                          {availableTimes.map((slot) => (
-                            <ToggleButton
-                              key={slot.id}
-                              value={slot.id}
-                              selected={selectedSlotId === slot.id}
-                              onChange={() => setSelectedSlotId(slot.id)}
-                              sx={(theme) => ({
-                                borderRadius: 999,
-                                borderColor: "divider",
-                                color: "text.secondary",
-                                "&.Mui-selected": {
-                                  bgcolor: "primary.main",
-                                  color: "primary.contrastText",
-                                  borderColor: "primary.main",
-                                },
-                                "&.Mui-selected:hover": {
-                                  bgcolor: theme.palette.primary.dark,
-                                },
-                              })}
-                            >
-                              {formatTimeLabel(slot.starts_at)}
-                            </ToggleButton>
-                          ))}
+                          {availableTimes.map((slot) => {
+                            const isPast = new Date(slot.starts_at).getTime() < Date.now();
+
+                            return (
+                              <ToggleButton
+                                key={slot.id}
+                                value={slot.id}
+                                selected={selectedSlotId === slot.id}
+                                disabled={isPast}
+                                onChange={() => setSelectedSlotId(slot.id)}
+                                sx={{
+                                  borderRadius: 1,
+                                  borderColor: "divider",
+                                  bgcolor: "background.paper",
+                                  color: "text.secondary",
+                                  minHeight: 44,
+                                  width: "100%",
+                                  textTransform: "none",
+                                  fontSize: "0.875rem",
+                                  py: 1,
+                                  "&.Mui-selected": {
+                                    bgcolor: "primary.main",
+                                    color: "primary.contrastText",
+                                    borderColor: "primary.main",
+                                  },
+                                  "&:hover": {
+                                    bgcolor:
+                                      "color-mix(in srgb, var(--mui-palette-primary-main) 8%, var(--mui-palette-background-paper))",
+                                    borderColor: "primary.main",
+                                  },
+                                  "&.Mui-selected:hover": {
+                                    bgcolor: "primary.dark",
+                                  },
+                                }}
+                              >
+                                <Stack spacing={0.2} alignItems="center">
+                                  <Typography component="span" sx={{ fontSize: "0.875rem" }}>
+                                    {formatTimeLabel(slot.starts_at)}
+                                  </Typography>
+                                  <Typography component="span" sx={{ fontSize: "0.625rem", opacity: 0.9 }}>
+                                    30 min
+                                  </Typography>
+                                </Stack>
+                              </ToggleButton>
+                            );
+                          })}
                         </Box>
                       )}
 
                       <Stack direction="row" justifyContent="space-between" sx={{ pt: 1 }}>
-                        <Button variant="text" onClick={goBack}>
+                        <Button variant="text" onClick={goBack} sx={{ minHeight: 44 }}>
                           Back
                         </Button>
-                        <Button variant="contained" disabled={!selectedSlotId} onClick={goNext}>
+                        <Button variant="contained" disabled={!selectedSlotId} onClick={goNext} sx={{ minHeight: 44 }}>
                           Next
                         </Button>
                       </Stack>
@@ -573,77 +680,110 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                   ) : null}
 
                   {activeStep === 3 ? (
-                    <Stack component="form" spacing={1.8} onSubmit={handleSubmit}>
-                      <Typography variant="h5" sx={{ fontFamily: "var(--font-dm-serif), serif" }}>
+                    <Stack component="form" spacing={2} onSubmit={handleSubmit}>
+                      <Typography
+                        variant="h3"
+                        sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.3rem", md: "1.6rem" } }}
+                      >
                         Your details
                       </Typography>
 
-                      <TextField
-                        label="Full name"
-                        value={formState.fullName}
-                        onChange={updateFormField("fullName")}
-                        required
-                        fullWidth
+                      <Box
                         sx={{
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: 1.5,
-                          },
+                          display: "grid",
+                          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+                          gap: 2,
                         }}
-                      />
+                      >
+                        <TextField
+                          label="Full name"
+                          value={formState.fullName}
+                          onChange={updateFormField("fullName")}
+                          required
+                          aria-required="true"
+                          fullWidth
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: 1.5,
+                            },
+                          }}
+                        />
 
-                      <TextField
-                        label="Email"
-                        type="email"
-                        value={formState.email}
-                        onChange={updateFormField("email")}
-                        required
-                        fullWidth
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: 1.5,
-                          },
-                        }}
-                      />
+                        <TextField
+                          label="Email"
+                          type="email"
+                          value={formState.email}
+                          onChange={updateFormField("email")}
+                          required
+                          aria-required="true"
+                          fullWidth
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: 1.5,
+                            },
+                          }}
+                        />
 
-                      <TextField
-                        label="Phone"
-                        value={formState.phone}
-                        onChange={updateFormField("phone")}
-                        fullWidth
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: 1.5,
-                          },
-                        }}
-                      />
+                        <TextField
+                          label="Phone"
+                          value={formState.phone}
+                          onChange={updateFormField("phone")}
+                          fullWidth
+                          sx={{
+                            gridColumn: "1 / -1",
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: 1.5,
+                            },
+                          }}
+                        />
 
-                      <TextField
-                        label="Notes"
-                        value={formState.notes}
-                        onChange={updateFormField("notes")}
-                        multiline
-                        minRows={3}
-                        fullWidth
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: 1.5,
-                          },
-                        }}
-                      />
+                        <TextField
+                          label="Notes"
+                          value={formState.notes}
+                          onChange={updateFormField("notes")}
+                          multiline
+                          minRows={3}
+                          fullWidth
+                          sx={{
+                            gridColumn: "1 / -1",
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: 1.5,
+                            },
+                          }}
+                        />
+                      </Box>
 
-                      {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+                      {errorMessage ? (
+                        <Alert
+                          severity="error"
+                          action={
+                            <Button color="inherit" size="small" onClick={() => setActiveStep(2)}>
+                              Go back
+                            </Button>
+                          }
+                        >
+                          {errorMessage}
+                        </Alert>
+                      ) : null}
 
                       <Stack spacing={1} sx={{ pt: 0.8 }}>
                         <Button
                           type="submit"
                           variant="contained"
                           disabled={isSubmitting}
+                          startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
                           fullWidth
+                          sx={{ minHeight: 44 }}
                         >
                           {isSubmitting ? "Confirming..." : "Confirm appointment"}
                         </Button>
 
-                        <Button variant="text" onClick={goBack} disabled={isSubmitting} sx={{ alignSelf: "flex-start" }}>
+                        <Button
+                          variant="text"
+                          onClick={goBack}
+                          disabled={isSubmitting}
+                          sx={{ alignSelf: "flex-start", minHeight: 44 }}
+                        >
                           Back
                         </Button>
                       </Stack>
@@ -654,7 +794,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
             </Paper>
           </Box>
         </Stack>
-      </Box>
+      </Container>
     </Box>
   );
 }
