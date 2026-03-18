@@ -17,6 +17,7 @@ import {
   ToggleButton,
   Typography,
 } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import SectionOverline from "@/components/ui/section-overline";
 import type { AppointmentSlot, Employee } from "@/types/physio";
 
@@ -82,6 +83,7 @@ function getInitials(name: string | null) {
 }
 
 export default function BookingSection({ employees, slots }: BookingSectionProps) {
+  const theme = useTheme();
   const [activeStep, setActiveStep] = React.useState(0);
   const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string | null>(null);
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
@@ -269,7 +271,8 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
       aria-labelledby="booking-heading"
       sx={{
         scrollMarginTop: { xs: "56px", md: "64px" },
-        py: { xs: 6, md: 10, lg: 16 },
+        py: { xs: 6, md: 10 },
+        bgcolor: "background.default",
       }}
     >
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
@@ -326,31 +329,35 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                       key={step}
                       role="listitem"
                       aria-current={isCurrent ? "step" : undefined}
-                      sx={{ display: "grid", gridTemplateColumns: "32px 1fr", gap: 1.5 }}
+                      sx={{ display: "grid", gridTemplateColumns: "36px 1fr", gap: 1.5 }}
                     >
                       <Stack alignItems="center" spacing={0.8}>
                         <Box
                           sx={{
-                            width: 32,
-                            height: 32,
+                            width: 36,
+                            height: 36,
                             borderRadius: "50%",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
-                            fontSize: "0.82rem",
-                            fontWeight: 600,
-                            border: "1.5px solid",
-                            borderColor: isCompleted || isCurrent ? "primary.main" : "divider",
+                            fontSize: "0.95rem",
+                            fontWeight: 700,
+                            fontFamily: "var(--font-dm-serif), serif",
+                            border: "2px solid",
+                            borderColor: isCurrent || isCompleted ? "primary.main" : "divider",
                             bgcolor: isCurrent
                               ? "primary.main"
                               : isCompleted
-                                ? "color-mix(in srgb, var(--mui-palette-primary-main) 20%, transparent)"
+                                ? "color-mix(in srgb, var(--mui-palette-primary-main) 15%, transparent)"
                                 : "transparent",
                             color: isCurrent
-                              ? "primary.contrastText"
+                              ? "#ffffff"
                               : isCompleted
                                 ? "primary.main"
-                                : "text.secondary",
+                                : "text.disabled",
+                            boxShadow: isCurrent
+                              ? "0 0 0 4px color-mix(in srgb, var(--mui-palette-primary-main) 20%, transparent)"
+                              : "none",
                           }}
                         >
                           {isCompleted ? <CheckRoundedIcon sx={{ fontSize: 16 }} /> : stepIndex + 1}
@@ -361,6 +368,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                               width: 2,
                               height: 24,
                               bgcolor: stepIndex < activeStep ? "primary.main" : "divider",
+                              transition: "background-color 0.4s ease",
                             }}
                           />
                         ) : null}
@@ -376,7 +384,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                                 ? "text.secondary"
                                 : "text.disabled",
                             fontWeight: isCurrent ? 600 : 500,
-                            fontSize: "0.9rem",
+                            fontSize: isCurrent ? "0.875rem" : "0.8rem",
                           }}
                         >
                           {step}
@@ -397,8 +405,11 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                 borderColor: "divider",
                 borderRadius: 2.5,
                 p: { xs: 3, md: 4 },
-                bgcolor: "color-mix(in srgb, var(--mui-palette-background-paper) 60%, transparent)",
-                backdropFilter: "blur(8px)",
+                bgcolor:
+                  theme.palette.mode === "dark"
+                    ? alpha(theme.palette.background.paper, 0.7)
+                    : theme.palette.background.paper,
+                backdropFilter: "blur(12px)",
                 minHeight: 520,
                 "@keyframes bookingPanelIn": {
                   from: {
@@ -454,15 +465,19 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                     },
                   }}
                 >
+                  <Typography
+                    sx={{
+                      mb: 2,
+                      textAlign: "right",
+                      color: "text.disabled",
+                      fontSize: "0.75rem",
+                    }}
+                  >
+                    Step {activeStep + 1} of {bookingSteps.length}
+                  </Typography>
+
                   {activeStep === 0 ? (
                     <Stack spacing={2.1}>
-                      <Typography
-                        variant="h3"
-                        sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.3rem", md: "1.6rem" } }}
-                      >
-                        Choose your therapist
-                      </Typography>
-
                       <Box
                         sx={{
                           display: "grid",

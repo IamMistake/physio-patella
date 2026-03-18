@@ -3,8 +3,8 @@
 import * as React from "react";
 import PauseRoundedIcon from "@mui/icons-material/PauseRounded";
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded";
-import { Box, Container, Paper, Rating, Stack, Typography, useMediaQuery } from "@mui/material";
-import { useTheme } from "@mui/material/styles";
+import { Box, Container, IconButton, Paper, Rating, Stack, Typography, useMediaQuery } from "@mui/material";
+import { alpha, useTheme } from "@mui/material/styles";
 import SectionOverline from "@/components/ui/section-overline";
 import type { Review } from "@/types/physio";
 
@@ -18,6 +18,7 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
   const [isPaused, setIsPaused] = React.useState(false);
   const listToRender = reviews.length > 0 ? reviews : [];
   const animationDuration = isMobile ? "28s" : "40s";
+  const tintOpacity = theme.palette.mode === "dark" ? 0.1 : 0.06;
 
   return (
     <Box
@@ -25,16 +26,15 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
       aria-labelledby="reviews-heading"
       sx={{
         position: "relative",
-        py: { xs: 6, md: 10, lg: 16 },
+        py: { xs: 6, md: 10 },
+        bgcolor: "background.default",
         borderTop: "1px solid",
-        borderBottom: "1px solid",
         borderColor: "divider",
         "&::before": {
           content: '""',
           position: "absolute",
           inset: 0,
-          bgcolor: "primary.main",
-          opacity: 0.08,
+          backgroundColor: alpha(theme.palette.primary.main, tintOpacity),
           pointerEvents: "none",
         },
       }}
@@ -49,7 +49,7 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
             variant="h2"
             sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "2rem", md: "2.8rem" } }}
           >
-            Real results, real people
+            Real results. Real people.
           </Typography>
         </Stack>
       </Container>
@@ -58,54 +58,14 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
         role="region"
         aria-label="Client reviews"
         aria-live="off"
-        onClick={() => setIsPaused((previousState) => !previousState)}
         onFocus={() => setIsPaused(true)}
         sx={{
           position: "relative",
           zIndex: 1,
           mt: 4,
-          cursor: "pointer",
           px: { xs: 1.5, sm: 2.5 },
         }}
       >
-        {isPaused ? (
-          <Paper
-            sx={{
-              position: "absolute",
-              right: { xs: 18, md: 30 },
-              top: -10,
-              zIndex: 3,
-              py: 0.4,
-              px: 1,
-              display: "flex",
-              alignItems: "center",
-              gap: 0.6,
-              opacity: 0.5,
-            }}
-          >
-            <PlayArrowRoundedIcon sx={{ fontSize: 18 }} />
-            <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>Paused</Typography>
-          </Paper>
-        ) : (
-          <Paper
-            sx={{
-              position: "absolute",
-              right: { xs: 18, md: 30 },
-              top: -10,
-              zIndex: 3,
-              py: 0.4,
-              px: 1,
-              display: "flex",
-              alignItems: "center",
-              gap: 0.6,
-              opacity: 0.5,
-            }}
-          >
-            <PauseRoundedIcon sx={{ fontSize: 18 }} />
-            <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>Tap to pause</Typography>
-          </Paper>
-        )}
-
         <Box
           sx={{
             overflow: "hidden",
@@ -138,7 +98,7 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
                     key={`${rowIndex}-${review.id ?? reviewIndex}`}
                     tabIndex={0}
                     sx={{
-                      width: { xs: 260, md: 320 },
+                      width: 280,
                       height: 200,
                       flexShrink: 0,
                       borderRadius: 2,
@@ -166,9 +126,8 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
 
                     <Typography
                       sx={{
-                        fontFamily: "var(--font-dm-serif), serif",
-                        fontSize: { xs: "0.95rem", md: "1rem" },
-                        fontStyle: "italic",
+                        fontFamily: "var(--font-instrument-sans), sans-serif",
+                        fontSize: "0.875rem",
                         lineHeight: 1.65,
                         flexGrow: 1,
                         display: "-webkit-box",
@@ -189,6 +148,21 @@ export default function ReviewsSection({ reviews }: ReviewsSectionProps) {
             ))}
           </Box>
         </Box>
+
+        <Stack alignItems="center" sx={{ mt: 3 }}>
+          <IconButton
+            onClick={() => setIsPaused((previousState) => !previousState)}
+            aria-label={isPaused ? "Resume reviews" : "Pause reviews"}
+            size="small"
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              bgcolor: "background.paper",
+            }}
+          >
+            {isPaused ? <PlayArrowRoundedIcon /> : <PauseRoundedIcon />}
+          </IconButton>
+        </Stack>
       </Box>
     </Box>
   );

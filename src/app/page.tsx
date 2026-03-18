@@ -1,8 +1,10 @@
 import { Box } from "@mui/material";
 import BookingSection from "@/components/sections/booking-section";
+import ConditionsSection from "@/components/sections/conditions-section";
 import DocumentsSection from "@/components/sections/documents-section";
 import EmployeesSection from "@/components/sections/employees-section";
 import HeroSection from "@/components/sections/hero-section";
+import JourneySection from "@/components/sections/journey-section";
 import ReviewsSection from "@/components/sections/reviews-section";
 import { createClient } from "@/lib/supabase/server";
 import type { AppointmentSlot, Employee, Review, StudioDocument } from "@/types/physio";
@@ -123,29 +125,13 @@ export default async function Home() {
   return (
     <Box component="div">
       <HeroSection />
-      <Box
-        aria-hidden
-        sx={{
-          height: 1,
-          width: "100%",
-          background:
-            "linear-gradient(90deg, transparent, var(--mui-palette-divider), transparent)",
-        }}
-      />
+      <Box id="therapies" sx={{ scrollMarginTop: { xs: "56px", md: "64px" } }} />
+      <ConditionsSection />
+      <JourneySection />
       <EmployeesSection employees={employees} />
       <Box id="blog" sx={{ scrollMarginTop: { xs: "56px", md: "64px" } }} />
       <ReviewsSection reviews={reviews} />
-      <Box id="therapies" sx={{ scrollMarginTop: { xs: "56px", md: "64px" } }} />
       <DocumentsSection documents={documents} />
-      <Box
-        aria-hidden
-        sx={{
-          height: 1,
-          width: "100%",
-          background:
-            "linear-gradient(90deg, transparent, var(--mui-palette-divider), transparent)",
-        }}
-      />
       <BookingSection employees={employees} slots={slots} />
     </Box>
   );

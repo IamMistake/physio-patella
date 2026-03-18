@@ -26,7 +26,7 @@ function getAccent(docType: string | null) {
     return { token: "secondary.main", cssVar: "var(--mui-palette-secondary-main)" };
   }
 
-  if (normalized === "brochure") {
+  if (normalized === "brochure" || normalized === "policy") {
     return { token: "success.main", cssVar: "var(--mui-palette-success-main, #4caf50)" };
   }
 
@@ -46,7 +46,12 @@ function formatDocType(docType: string | null) {
 
 export default function DocumentsSection({ documents }: DocumentsSectionProps) {
   return (
-    <Box id="documents" component="section" aria-labelledby="documents-heading" sx={{ py: { xs: 6, md: 10, lg: 16 } }}>
+    <Box
+      id="documents"
+      component="section"
+      aria-labelledby="documents-heading"
+      sx={{ py: { xs: 6, md: 10 }, bgcolor: "background.paper" }}
+    >
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={4}>
           <Stack spacing={1.3}>
@@ -56,7 +61,7 @@ export default function DocumentsSection({ documents }: DocumentsSectionProps) {
               variant="h2"
               sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "2rem", md: "2.8rem" } }}
             >
-              Studio credentials
+              Certificates
             </Typography>
           </Stack>
 
@@ -84,11 +89,12 @@ export default function DocumentsSection({ documents }: DocumentsSectionProps) {
                     sx={{
                       borderRadius: 2,
                       p: 3.5,
-                      minHeight: 236,
+                      minHeight: 200,
                       display: "flex",
                       flexDirection: "column",
                       border: "1px solid",
                       borderColor: "divider",
+                      boxShadow: `inset 0 5px 0 0 ${accent.cssVar}`,
                       transition: "transform 0.25s ease, background-color 0.25s ease",
                       "@media (prefers-reduced-motion: no-preference)": {
                         animation: `documentReveal 0.45s ease ${index * 0.07}s both`,
@@ -109,17 +115,6 @@ export default function DocumentsSection({ documents }: DocumentsSectionProps) {
                       },
                     }}
                   >
-                    <Box
-                      sx={{
-                        height: 6,
-                        bgcolor: accent.cssVar,
-                        borderRadius: "16px 16px 0 0",
-                        mx: -3.5,
-                        mt: -3.5,
-                        mb: 2.5,
-                      }}
-                    />
-
                     <Chip
                       label={formatDocType(document.doc_type)}
                       size="small"
@@ -179,6 +174,9 @@ export default function DocumentsSection({ documents }: DocumentsSectionProps) {
                           minHeight: 44,
                           color: accent.token,
                           borderColor: accent.token,
+                          "&:hover": {
+                            bgcolor: `color-mix(in srgb, ${accent.cssVar} 8%, transparent)`,
+                          },
                         }}
                       >
                         View document
