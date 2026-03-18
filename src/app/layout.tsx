@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Serif_Display, Instrument_Sans } from "next/font/google";
+import Navbar from "@/components/layout/navbar";
 import AppThemeProvider from "@/components/providers/app-theme-provider";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSerif = DM_Serif_Display({
+  variable: "--font-dm-serif",
+  weight: "400",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const instrumentSans = Instrument_Sans({
+  variable: "--font-instrument-sans",
   subsets: ["latin"],
 });
 
@@ -25,10 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <AppThemeProvider>{children}</AppThemeProvider>
+      <body className={`${dmSerif.variable} ${instrumentSans.variable} antialiased`}>
+        <AppThemeProvider>
+          <Navbar />
+          {children}
+        </AppThemeProvider>
       </body>
     </html>
   );

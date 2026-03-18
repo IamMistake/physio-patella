@@ -60,12 +60,14 @@ export function getAppTheme(mode: AppThemeMode) {
       borderRadius: 14,
     },
     typography: {
-      fontFamily: "var(--font-geist-sans), sans-serif",
+      fontFamily: "var(--font-instrument-sans), sans-serif",
       h1: {
-        fontWeight: 700,
+        fontFamily: "var(--font-dm-serif), serif",
+        fontWeight: 400,
       },
       h2: {
-        fontWeight: 700,
+        fontFamily: "var(--font-dm-serif), serif",
+        fontWeight: 400,
       },
       h3: {
         fontWeight: 700,

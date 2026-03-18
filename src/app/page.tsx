@@ -1,85 +1,121 @@
-"use client";
+import { Box, Divider } from "@mui/material";
+import BookingSection from "@/components/sections/booking-section";
+import DocumentsSection from "@/components/sections/documents-section";
+import EmployeesSection from "@/components/sections/employees-section";
+import HeroSection from "@/components/sections/hero-section";
+import ReviewsSection from "@/components/sections/reviews-section";
+import { createClient } from "@/lib/supabase/server";
+import type {
+  AppointmentSlot,
+  Employee,
+  EmployeeCertificate,
+  Review,
+  StudioDocument,
+} from "@/types/physio";
 
-import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
-import MedicalServicesRoundedIcon from "@mui/icons-material/MedicalServicesRounded";
-import {
-  Box,
-  Button,
-  Chip,
-  Container,
-  Paper,
-  Stack,
-  Typography,
-} from "@mui/material";
-import { alpha } from "@mui/material/styles";
-import ThemeToggle from "@/components/theme/theme-toggle";
+type EmployeeRow = {
+  id: string;
+  name: string | null;
+  description: string | null;
+  image_path: string | null;
+  specialization: string | null;
+  employee_certificates: EmployeeCertificate[] | null;
+};
 
-export default function Home() {
+type ReviewRow = {
+  id: string;
+  client_name: string | null;
+  rating: number | null;
+  quote: string | null;
+};
+
+type DocumentRow = {
+  id: string;
+  title: string | null;
+  description: string | null;
+  doc_type: string | null;
+  file_path: string | null;
+  sort_order: number | null;
+};
+
+type SlotRow = {
+  id: string;
+  employee_id: string;
+  starts_at: string;
+  ends_at: string;
+  is_available: boolean;
+};
+
+async function getPageData() {
+  const supabase = await createClient();
+  const nowIso = new Date().toISOString();
+
+  const [employeesResult, reviewsResult, documentsResult, slotsResult] = await Promise.all([
+    supabase
+      .from("employees")
+      .select(
+        "id, name, description, image_path, specialization, employee_certificates(id, title, issuer, issued_on, file_path, sort_order)",
+      )
+      .eq("is_active", true)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("reviews")
+      .select("id, client_name, rating, quote")
+      .eq("is_published", true)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("documents")
+      .select("id, title, description, doc_type, file_path, sort_order")
+      .eq("is_published", true)
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("appointment_slots")
+      .select("id, employee_id, starts_at, ends_at, is_available")
+      .eq("is_available", true)
+      .gte("starts_at", nowIso)
+      .order("starts_at", { ascending: true }),
+  ]);
+
+  const employees: Employee[] = ((employeesResult.data as EmployeeRow[] | null) ?? []).map(
+    (employee) => ({
+      id: employee.id,
+      name: employee.name,
+      description: employee.description,
+      image_path: employee.image_path,
+      specialization: employee.specialization,
+      certificates: (employee.employee_certificates ?? []).sort(
+        (firstCertificate, secondCertificate) =>
+          (firstCertificate.sort_order ?? 0) - (secondCertificate.sort_order ?? 0),
+      ),
+    }),
+  );
+
+  const reviews: Review[] = (reviewsResult.data as ReviewRow[] | null) ?? [];
+  const documents: StudioDocument[] = (documentsResult.data as DocumentRow[] | null) ?? [];
+  const slots: AppointmentSlot[] = (slotsResult.data as SlotRow[] | null) ?? [];
+
+  return {
+    employees,
+    reviews,
+    documents,
+    slots,
+  };
+}
+
+export default async function Home() {
+  const { employees, reviews, documents, slots } = await getPageData();
+
   return (
-    <Box
-      sx={(theme) => ({
-        minHeight: "100dvh",
-        display: "flex",
-        alignItems: "center",
-        py: { xs: 6, md: 10 },
-        background:
-          theme.palette.mode === "light"
-            ? `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.1)} 0%, ${alpha(theme.palette.secondary.light, 0.15)} 100%)`
-            : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.14)} 0%, ${alpha(theme.palette.secondary.main, 0.12)} 100%)`,
-      })}
-    >
-      <Container maxWidth="lg">
-        <Stack spacing={3}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Chip
-              label="Physio Patella"
-              icon={<MedicalServicesRoundedIcon />}
-              color="primary"
-              sx={{ width: "fit-content", px: 1 }}
-            />
-            <ThemeToggle />
-          </Stack>
-
-          <Paper
-            sx={(theme) => ({
-              p: { xs: 3, md: 6 },
-              border: "1px solid",
-              borderColor: "divider",
-              backdropFilter: "blur(6px)",
-              bgcolor:
-                theme.palette.mode === "light"
-                  ? alpha(theme.palette.background.paper, 0.86)
-                  : alpha(theme.palette.background.paper, 0.7),
-            })}
-          >
-            <Stack spacing={3.5}>
-              <Typography variant="h2" component="h1" sx={{ fontSize: { xs: "2rem", md: "3rem" } }}>
-                Welcome to the Physio Patella digital studio.
-              </Typography>
-
-              <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 860 }}>
-                Your React website now has a custom branded theme with light and dark
-                mode switching. Next.js, MUI, and Supabase are configured and ready for
-                appointments, employee profiles, therapies, and blog content.
-              </Typography>
-
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  startIcon={<CalendarMonthRoundedIcon />}
-                >
-                  Build Appointment Page
-                </Button>
-
-                <Button variant="outlined" size="large" color="secondary">
-                  Add Team & Therapies
-                </Button>
-              </Stack>
-            </Stack>
-          </Paper>
-        </Stack>
-      </Container>
+    <Box component="main">
+      <HeroSection />
+      <Divider />
+      <EmployeesSection employees={employees} />
+      <Box id="blog" sx={{ scrollMarginTop: 120 }} />
+      <ReviewsSection reviews={reviews} />
+      <Box id="therapies" sx={{ scrollMarginTop: 120 }} />
+      <DocumentsSection documents={documents} />
+      <Divider />
+      <BookingSection employees={employees} slots={slots} />
     </Box>
   );
 }
