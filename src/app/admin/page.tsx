@@ -1,8 +1,12 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
   Checkbox,
+  Chip,
   Container,
   Divider,
   FormControlLabel,
@@ -10,10 +14,18 @@ import {
   Paper,
   Stack,
   Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Tabs,
   TextField,
   Typography,
 } from "@mui/material";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import BlogPostsManager from "@/components/admin/blog-posts-manager";
 import { hasAdminSession } from "@/lib/admin-auth";
@@ -24,6 +36,8 @@ import {
   createCertificateAction,
   createDocumentAction,
   createEmployeeAction,
+  createEmployeeSlotsAction,
+  deleteEmployeeSlotAction,
   deleteAppointmentAction,
   deleteCertificateAction,
   deleteDocumentAction,
@@ -65,6 +79,24 @@ type EmployeeRow = {
   specialization: string | null;
   is_active: boolean;
   employee_certificates: EmployeeCertificateRow[] | null;
+  appointment_slots: EmployeeSlotRow[] | null;
+};
+
+type SlotAppointmentRelation =
+  | {
+      id: string;
+    }
+  | {
+      id: string;
+    }[]
+  | null;
+
+type EmployeeSlotRow = {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  is_available: boolean;
+  appointments: SlotAppointmentRelation;
 };
 
 type DocumentRow = {
@@ -143,6 +175,14 @@ function formatDateTime(dateTimeIso: string) {
   }).format(new Date(dateTimeIso));
 }
 
+function formatTimeLabel(dateTimeIso: string) {
+  return new Intl.DateTimeFormat("mk-MK", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(dateTimeIso));
+}
+
 function getEmployeeNameFromRelation(relation: EmployeeRelation) {
   if (!relation) {
     return null;
@@ -173,6 +213,42 @@ function toDateInputValue(value: string | null) {
   }
 
   return value.slice(0, 10);
+}
+
+function formatStatusLabel(status: string) {
+  if (status === "confirmed") {
+    return "Потврден";
+  }
+
+  if (status === "cancelled") {
+    return "Откажан";
+  }
+
+  return "На чекање";
+}
+
+function getStatusColor(status: string): "default" | "success" | "warning" | "error" {
+  if (status === "confirmed") {
+    return "success";
+  }
+
+  if (status === "cancelled") {
+    return "error";
+  }
+
+  return "warning";
+}
+
+function hasLinkedAppointment(relation: SlotAppointmentRelation) {
+  if (!relation) {
+    return false;
+  }
+
+  if (Array.isArray(relation)) {
+    return relation.length > 0;
+  }
+
+  return Boolean(relation.id);
 }
 
 export default async function AdminPage({ searchParams }: AdminPageProps) {
@@ -207,7 +283,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
       admin
         .from("employees")
         .select(
-          "id, name, description, image_path, specialization, is_active, employee_certificates(id, title, issuer, issued_on, file_path, sort_order)",
+          "id, name, description, image_path, specialization, is_active, employee_certificates(id, title, issuer, issued_on, file_path, sort_order), appointment_slots(id, starts_at, ends_at, is_available, appointments(id))",
         )
         .order("created_at", { ascending: true }),
       admin
@@ -255,8 +331,148 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     employeeNameById.set(employee.id, employee.name ?? "Без име");
   }
 
+  const requestHeaders = await headers();
+  const requestDateHeader = requestHeaders.get("date");
+  const nowTimestamp = requestDateHeader ? Date.parse(requestDateHeader) : Number.NaN;
+  const todayDateInputValue = Number.isFinite(nowTimestamp)
+    ? new Date(nowTimestamp).toISOString().slice(0, 10)
+    : "";
+  const upcomingAppointments: AppointmentRow[] = [];
+  const pastAppointments: AppointmentRow[] = [];
+
+  for (const appointment of appointments) {
+    const slot = getSlotFromRelation(appointment.appointment_slots);
+    const slotEndTimestamp = slot ? new Date(slot.ends_at).getTime() : Number.NaN;
+
+    if (Number.isFinite(slotEndTimestamp) && slotEndTimestamp < nowTimestamp) {
+      pastAppointments.push(appointment);
+    } else {
+      upcomingAppointments.push(appointment);
+    }
+  }
+
+  const getSlotStartTimestamp = (appointment: AppointmentRow) => {
+    const slot = getSlotFromRelation(appointment.appointment_slots);
+    return slot ? new Date(slot.starts_at).getTime() : Number.NaN;
+  };
+
+  upcomingAppointments.sort((first, second) => {
+    return getSlotStartTimestamp(first) - getSlotStartTimestamp(second);
+  });
+
+  pastAppointments.sort((first, second) => {
+    return getSlotStartTimestamp(second) - getSlotStartTimestamp(first);
+  });
+
+  const renderAppointmentCard = (appointment: AppointmentRow) => {
+    const employeeName = getEmployeeNameFromRelation(appointment.employees) ?? "Вработен";
+    const slot = getSlotFromRelation(appointment.appointment_slots);
+
+    return (
+      <Paper key={appointment.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+        <Stack spacing={1.2}>
+          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
+            {employeeName}
+            {slot
+              ? ` - ${formatDateTime(slot.starts_at)} - ${formatDateTime(slot.ends_at)}`
+              : " - Нема податоци за слот"}
+          </Typography>
+
+          <Box component="form" action={updateAppointmentAction}>
+            <Stack spacing={1.2}>
+              <input type="hidden" name="id" value={appointment.id} />
+
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+                  gap: 1.2,
+                }}
+              >
+                <TextField
+                  name="clientName"
+                  label="Име и презиме"
+                  defaultValue={appointment.client_name}
+                  required
+                  fullWidth
+                />
+                <TextField
+                  name="email"
+                  label="Е-пошта"
+                  type="email"
+                  defaultValue={appointment.email}
+                  required
+                  fullWidth
+                />
+                <TextField name="phone" label="Телефон" defaultValue={appointment.phone ?? ""} fullWidth />
+                <TextField
+                  select
+                  name="status"
+                  label="Статус"
+                  defaultValue={appointment.status}
+                  fullWidth
+                >
+                  <MenuItem value="pending">На чекање</MenuItem>
+                  <MenuItem value="confirmed">Потврден</MenuItem>
+                  <MenuItem value="cancelled">Откажан</MenuItem>
+                </TextField>
+                <TextField
+                  name="notes"
+                  label="Забелешки"
+                  multiline
+                  minRows={2}
+                  defaultValue={appointment.notes ?? ""}
+                  fullWidth
+                  sx={{ gridColumn: { xs: "1 / -1", md: "2 / -1" } }}
+                />
+              </Box>
+
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                <Button type="submit" variant="contained" sx={{ minHeight: 44 }}>
+                  Ажурирај термин
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+
+          <Box component="form" action={deleteAppointmentAction}>
+            <input type="hidden" name="id" value={appointment.id} />
+            <input type="hidden" name="slotId" value={appointment.slot_id} />
+            <Button type="submit" variant="outlined" color="error" sx={{ minHeight: 44 }}>
+              Избриши термин
+            </Button>
+          </Box>
+        </Stack>
+      </Paper>
+    );
+  };
+
   return (
-    <Box sx={{ py: { xs: 4, md: 6 }, bgcolor: "background.default" }}>
+    <Box
+      sx={{
+        py: { xs: 4, md: 6 },
+        bgcolor: "background.default",
+        "& .MuiTextField-root .MuiInputBase-root": {
+          minHeight: 50,
+          borderRadius: 2,
+          alignItems: "center",
+        },
+        "& .MuiTextField-root .MuiInputBase-root.MuiInputBase-multiline": {
+          minHeight: "unset",
+          alignItems: "flex-start",
+        },
+        "& .MuiTextField-root .MuiInputBase-input": {
+          fontSize: "0.98rem",
+          lineHeight: 1.35,
+        },
+        "& .MuiTextField-root .MuiInputBase-inputMultiline": {
+          lineHeight: 1.5,
+        },
+        "& .MuiTextField-root .MuiInputLabel-root": {
+          fontSize: "0.92rem",
+        },
+      }}
+    >
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={3}>
           <Paper sx={{ p: { xs: 2.5, md: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
@@ -377,84 +593,88 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <Divider />
 
               <Stack spacing={1.5}>
-                {appointments.length === 0 ? (
+                <Typography sx={{ fontSize: "0.82rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "text.secondary" }}>
+                  Претстојни термини
+                </Typography>
+
+                {upcomingAppointments.length === 0 ? (
                   <Typography sx={{ color: "text.secondary" }}>Нема креирани термини.</Typography>
                 ) : (
-                  appointments.map((appointment) => {
-                    const employeeName = getEmployeeNameFromRelation(appointment.employees) ?? "Вработен";
-                    const slot = getSlotFromRelation(appointment.appointment_slots);
+                  upcomingAppointments.map(renderAppointmentCard)
+                )}
 
-                    return (
-                      <Paper key={appointment.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-                        <Stack spacing={1.2}>
-                          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
-                            {employeeName}
-                            {slot
-                              ? ` - ${formatDateTime(slot.starts_at)} - ${formatDateTime(slot.ends_at)}`
-                              : " - Нема податоци за слот"}
-                          </Typography>
+                <Divider sx={{ my: 0.5 }} />
 
-                          <Box component="form" action={updateAppointmentAction}>
-                            <Stack spacing={1.2}>
-                              <input type="hidden" name="id" value={appointment.id} />
+                <Typography sx={{ fontSize: "0.82rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "text.secondary" }}>
+                  Поминати термини
+                </Typography>
 
-                              <Box
-                                sx={{
-                                  display: "grid",
-                                  gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
-                                  gap: 1.2,
-                                }}
-                              >
-                                <TextField
-                                  name="clientName"
-                                  label="Име и презиме"
-                                  defaultValue={appointment.client_name}
-                                  required
-                                  fullWidth
+                {pastAppointments.length === 0 ? (
+                  <Typography sx={{ color: "text.secondary" }}>Нема поминати термини.</Typography>
+                ) : (
+                  <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Датум и време</TableCell>
+                          <TableCell>Вработен</TableCell>
+                          <TableCell>Клиент</TableCell>
+                          <TableCell>Контакт</TableCell>
+                          <TableCell>Статус</TableCell>
+                          <TableCell align="right">Акции</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {pastAppointments.map((appointment) => {
+                          const slot = getSlotFromRelation(appointment.appointment_slots);
+                          const employeeName =
+                            getEmployeeNameFromRelation(appointment.employees) ?? "Вработен";
+
+                          return (
+                            <TableRow key={appointment.id} hover>
+                              <TableCell sx={{ minWidth: 190 }}>
+                                {slot
+                                  ? `${formatDateTime(slot.starts_at)} - ${formatTimeLabel(slot.ends_at)}`
+                                  : "Нема слот"}
+                              </TableCell>
+                              <TableCell sx={{ minWidth: 140 }}>{employeeName}</TableCell>
+                              <TableCell sx={{ minWidth: 150 }}>{appointment.client_name}</TableCell>
+                              <TableCell sx={{ minWidth: 190 }}>
+                                <Stack spacing={0.2}>
+                                  <Typography sx={{ fontSize: "0.8rem" }}>{appointment.email}</Typography>
+                                  {appointment.phone ? (
+                                    <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+                                      {appointment.phone}
+                                    </Typography>
+                                  ) : null}
+                                </Stack>
+                              </TableCell>
+                              <TableCell>
+                                <Chip
+                                  size="small"
+                                  color={getStatusColor(appointment.status)}
+                                  label={formatStatusLabel(appointment.status)}
                                 />
-                                 <TextField name="email" label="Е-пошта" type="email" defaultValue={appointment.email} required fullWidth />
-                                <TextField name="phone" label="Телефон" defaultValue={appointment.phone ?? ""} fullWidth />
-                                <TextField
-                                  select
-                                  name="status"
-                                  label="Статус"
-                                  defaultValue={appointment.status}
-                                  fullWidth
+                              </TableCell>
+                              <TableCell align="right" sx={{ minWidth: 140 }}>
+                                <Box
+                                  component="form"
+                                  action={deleteAppointmentAction}
+                                  sx={{ display: "inline-flex" }}
                                 >
-                                  <MenuItem value="pending">На чекање</MenuItem>
-                                  <MenuItem value="confirmed">Потврден</MenuItem>
-                                  <MenuItem value="cancelled">Откажан</MenuItem>
-                                </TextField>
-                                <TextField
-                                  name="notes"
-                                  label="Забелешки"
-                                  multiline
-                                  minRows={2}
-                                  defaultValue={appointment.notes ?? ""}
-                                  fullWidth
-                                  sx={{ gridColumn: { xs: "1 / -1", md: "2 / -1" } }}
-                                />
-                              </Box>
-
-                              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                                <Button type="submit" variant="contained" sx={{ minHeight: 44 }}>
-                                  Ажурирај термин
-                                </Button>
-                              </Stack>
-                            </Stack>
-                          </Box>
-
-                          <Box component="form" action={deleteAppointmentAction}>
-                            <input type="hidden" name="id" value={appointment.id} />
-                            <input type="hidden" name="slotId" value={appointment.slot_id} />
-                            <Button type="submit" variant="outlined" color="error" sx={{ minHeight: 44 }}>
-                              Избриши термин
-                            </Button>
-                          </Box>
-                        </Stack>
-                      </Paper>
-                    );
-                  })
+                                  <input type="hidden" name="id" value={appointment.id} />
+                                  <input type="hidden" name="slotId" value={appointment.slot_id} />
+                                  <Button type="submit" variant="outlined" color="error" size="small">
+                                    Избриши
+                                  </Button>
+                                </Box>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 )}
               </Stack>
             </Stack>
@@ -506,6 +726,17 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 {employees.map((employee) => {
                   const certificates = (employee.employee_certificates ?? []).slice().sort((first, second) => {
                     return (first.sort_order ?? 0) - (second.sort_order ?? 0);
+                  });
+
+                  const employeeSlots = (employee.appointment_slots ?? [])
+                    .slice()
+                    .sort((first, second) => {
+                      return new Date(first.starts_at).getTime() - new Date(second.starts_at).getTime();
+                    });
+
+                  const upcomingEmployeeSlots = employeeSlots.filter((slot) => {
+                    const endsAtTimestamp = new Date(slot.ends_at).getTime();
+                    return Number.isFinite(nowTimestamp) ? endsAtTimestamp >= nowTimestamp : true;
                   });
 
                   return (
@@ -566,99 +797,253 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
                         <Divider />
 
-                        <Stack spacing={1}>
-                          <Typography sx={{ fontWeight: 600, fontSize: "0.95rem" }}>Сертификати</Typography>
+                        <Stack spacing={1.2}>
+                          <Typography sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                            Слободни термини
+                          </Typography>
 
-                          {certificates.length === 0 ? (
-                            <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>
-                              Нема додадени сертификати.
-                            </Typography>
-                          ) : (
-                            certificates.map((certificate) => (
-                              <Paper key={certificate.id} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
-                                <Stack spacing={1}>
-                                  <Box component="form" action={updateCertificateAction}>
-                                    <Stack spacing={1}>
-                                      <input type="hidden" name="id" value={certificate.id} />
-                                      <Box
-                                        sx={{
-                                          display: "grid",
-                                          gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
-                                          gap: 1,
-                                        }}
-                                      >
-                                        <TextField name="title" label="Наслов" defaultValue={certificate.title ?? ""} required size="small" fullWidth />
-                                        <TextField name="issuer" label="Издавач" defaultValue={certificate.issuer ?? ""} size="small" fullWidth />
-                                        <TextField
-                                          name="issuedOn"
-                                          label="Датум"
-                                          type="date"
-                                          defaultValue={toDateInputValue(certificate.issued_on)}
-                                          size="small"
-                                          InputLabelProps={{ shrink: true }}
-                                          fullWidth
-                                        />
-                                        <TextField
-                                          name="filePath"
-                                          label="Патека до фајл"
-                                          defaultValue={certificate.file_path ?? ""}
-                                          size="small"
-                                          fullWidth
-                                          sx={{ gridColumn: { xs: "1 / -1", md: "1 / 3" } }}
-                                        />
-                                        <TextField
-                                          name="sortOrder"
-                                          label="Редослед"
-                                          type="number"
-                                          defaultValue={certificate.sort_order ?? 0}
-                                          size="small"
-                                          fullWidth
-                                        />
-                                      </Box>
-                                      <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                                        <Button type="submit" variant="contained" size="small" sx={{ minHeight: 40 }}>
-                                          Ажурирај сертификат
-                                        </Button>
-                                      </Stack>
-                                    </Stack>
-                                  </Box>
+                          <Paper
+                            variant="outlined"
+                            sx={{
+                              p: 1.5,
+                              borderRadius: 1.5,
+                              bgcolor:
+                                "color-mix(in srgb, var(--mui-palette-primary-main) 5%, var(--mui-palette-background-paper))",
+                            }}
+                          >
+                            <Box component="form" action={createEmployeeSlotsAction}>
+                              <Stack spacing={1.2}>
+                                <input type="hidden" name="employeeId" value={employee.id} />
+                                <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
+                                  Додади повеќе 30-минутни слотови со еден клик.
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: "grid",
+                                    gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+                                    gap: 1,
+                                  }}
+                                >
+                                  <TextField
+                                    name="date"
+                                    label="Датум"
+                                    type="date"
+                                    defaultValue={todayDateInputValue}
+                                    InputLabelProps={{ shrink: true }}
+                                    required
+                                    fullWidth
+                                  />
+                                  <TextField
+                                    name="startTime"
+                                    label="Од"
+                                    type="time"
+                                    defaultValue="08:00"
+                                    InputLabelProps={{ shrink: true }}
+                                    inputProps={{ step: 1800 }}
+                                    required
+                                    fullWidth
+                                  />
+                                  <TextField
+                                    name="endTime"
+                                    label="До"
+                                    type="time"
+                                    defaultValue="16:00"
+                                    InputLabelProps={{ shrink: true }}
+                                    inputProps={{ step: 1800 }}
+                                    required
+                                    fullWidth
+                                  />
+                                </Box>
+                                <Button type="submit" variant="contained" sx={{ width: "fit-content", minHeight: 44 }}>
+                                  Додади слотови
+                                </Button>
+                              </Stack>
+                            </Box>
+                          </Paper>
 
-                                  <Box component="form" action={deleteCertificateAction}>
-                                    <input type="hidden" name="id" value={certificate.id} />
-                                    <Button type="submit" variant="outlined" color="error" size="small" sx={{ minHeight: 40 }}>
-                                      Избриши сертификат
-                                    </Button>
-                                  </Box>
-                                </Stack>
-                              </Paper>
-                            ))
-                          )}
-
-                          <Box component="form" action={createCertificateAction}>
-                            <Stack spacing={1}>
-                              <input type="hidden" name="employeeId" value={employee.id} />
+                          <Stack spacing={1}>
+                            {upcomingEmployeeSlots.length === 0 ? (
                               <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>
-                                Додади нов сертификат за {employee.name ?? "овој вработен"}
+                                Нема идни слотови.
                               </Typography>
-                              <Box
-                                sx={{
-                                  display: "grid",
-                                  gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
-                                  gap: 1,
-                                }}
-                              >
-                                <TextField name="title" label="Наслов" required size="small" fullWidth />
-                                <TextField name="issuer" label="Издавач" size="small" fullWidth />
-                                <TextField name="issuedOn" label="Датум" type="date" size="small" InputLabelProps={{ shrink: true }} fullWidth />
-                                <TextField name="filePath" label="Патека до фајл" size="small" fullWidth sx={{ gridColumn: { xs: "1 / -1", md: "1 / 3" } }} />
-                                <TextField name="sortOrder" label="Редослед" type="number" defaultValue={0} size="small" fullWidth />
-                              </Box>
-                              <Button type="submit" variant="outlined" size="small" sx={{ width: "fit-content", minHeight: 40 }}>
-                                Додади сертификат
-                              </Button>
-                            </Stack>
-                          </Box>
+                            ) : (
+                              upcomingEmployeeSlots.map((slot) => {
+                                const isBooked = hasLinkedAppointment(slot.appointments) || !slot.is_available;
+
+                                return (
+                                  <Paper key={slot.id} variant="outlined" sx={{ p: 1.2, borderRadius: 1.2 }}>
+                                    <Stack
+                                      direction={{ xs: "column", sm: "row" }}
+                                      spacing={1}
+                                      alignItems={{ xs: "flex-start", sm: "center" }}
+                                      justifyContent="space-between"
+                                    >
+                                      <Stack spacing={0.35}>
+                                        <Typography sx={{ fontSize: "0.88rem", fontWeight: 600 }}>
+                                          {formatDateTime(slot.starts_at)} - {formatDateTime(slot.ends_at)}
+                                        </Typography>
+                                        <Typography sx={{ fontSize: "0.76rem", color: isBooked ? "warning.main" : "success.main" }}>
+                                          {isBooked ? "Резервиран термин" : "Слободен термин"}
+                                        </Typography>
+                                      </Stack>
+
+                                      <Box component="form" action={deleteEmployeeSlotAction}>
+                                        <input type="hidden" name="slotId" value={slot.id} />
+                                        <Button
+                                          type="submit"
+                                          variant="outlined"
+                                          color="error"
+                                          disabled={isBooked}
+                                          sx={{ minHeight: 40 }}
+                                        >
+                                          Избриши слот
+                                        </Button>
+                                      </Box>
+                                    </Stack>
+                                  </Paper>
+                                );
+                              })
+                            )}
+                          </Stack>
                         </Stack>
+
+                        <Accordion
+                          disableGutters
+                          elevation={0}
+                          sx={{
+                            border: "1px solid",
+                            borderColor: "divider",
+                            borderRadius: 1.5,
+                            overflow: "hidden",
+                            "&:before": { display: "none" },
+                          }}
+                        >
+                          <AccordionSummary
+                            expandIcon={<ExpandMoreRoundedIcon />}
+                            sx={{
+                              px: 1.5,
+                              minHeight: 56,
+                              bgcolor:
+                                "color-mix(in srgb, var(--mui-palette-primary-main) 5%, var(--mui-palette-background-paper))",
+                              "& .MuiAccordionSummary-content": {
+                                my: 0.5,
+                              },
+                            }}
+                          >
+                            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ width: "100%", pr: 1 }}>
+                              <Typography sx={{ fontWeight: 600, fontSize: "0.95rem" }}>Сертификати</Typography>
+                              <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                                {certificates.length} вкупно
+                              </Typography>
+                            </Stack>
+                          </AccordionSummary>
+
+                          <AccordionDetails sx={{ px: 1.5, pb: 1.5 }}>
+                            <Stack spacing={1}>
+                              {certificates.length === 0 ? (
+                                <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>
+                                  Нема додадени сертификати.
+                                </Typography>
+                              ) : (
+                                certificates.map((certificate) => (
+                                  <Paper key={certificate.id} variant="outlined" sx={{ p: 1.5, borderRadius: 1.5 }}>
+                                    <Stack spacing={1}>
+                                      <Box component="form" action={updateCertificateAction}>
+                                        <Stack spacing={1}>
+                                          <input type="hidden" name="id" value={certificate.id} />
+                                          <Box
+                                            sx={{
+                                              display: "grid",
+                                              gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+                                              gap: 1,
+                                            }}
+                                          >
+                                            <TextField
+                                              name="title"
+                                              label="Наслов"
+                                              defaultValue={certificate.title ?? ""}
+                                              required
+                                              InputLabelProps={{ shrink: true }}
+                                              fullWidth
+                                            />
+                                            <TextField
+                                              name="issuer"
+                                              label="Издавач"
+                                              defaultValue={certificate.issuer ?? ""}
+                                              InputLabelProps={{ shrink: true }}
+                                              fullWidth
+                                            />
+                                            <TextField
+                                              name="issuedOn"
+                                              label="Датум"
+                                              type="date"
+                                              defaultValue={toDateInputValue(certificate.issued_on)}
+                                              InputLabelProps={{ shrink: true }}
+                                              fullWidth
+                                            />
+                                            <TextField
+                                              name="filePath"
+                                              label="Патека до фајл"
+                                              defaultValue={certificate.file_path ?? ""}
+                                              InputLabelProps={{ shrink: true }}
+                                              fullWidth
+                                              sx={{ gridColumn: { xs: "1 / -1", md: "1 / 3" } }}
+                                            />
+                                            <TextField
+                                              name="sortOrder"
+                                              label="Редослед"
+                                              type="number"
+                                              defaultValue={certificate.sort_order ?? 0}
+                                              InputLabelProps={{ shrink: true }}
+                                              fullWidth
+                                            />
+                                          </Box>
+                                          <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                                            <Button type="submit" variant="contained" sx={{ minHeight: 44 }}>
+                                              Ажурирај сертификат
+                                            </Button>
+                                          </Stack>
+                                        </Stack>
+                                      </Box>
+
+                                      <Box component="form" action={deleteCertificateAction}>
+                                        <input type="hidden" name="id" value={certificate.id} />
+                                        <Button type="submit" variant="outlined" color="error" sx={{ minHeight: 44 }}>
+                                          Избриши сертификат
+                                        </Button>
+                                      </Box>
+                                    </Stack>
+                                  </Paper>
+                                ))
+                              )}
+
+                              <Box component="form" action={createCertificateAction}>
+                                <Stack spacing={1}>
+                                  <input type="hidden" name="employeeId" value={employee.id} />
+                                  <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>
+                                    Додади нов сертификат за {employee.name ?? "овој вработен"}
+                                  </Typography>
+                                  <Box
+                                    sx={{
+                                      display: "grid",
+                                      gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
+                                      gap: 1,
+                                    }}
+                                  >
+                                    <TextField name="title" label="Наслов" required fullWidth />
+                                    <TextField name="issuer" label="Издавач" fullWidth />
+                                    <TextField name="issuedOn" label="Датум" type="date" InputLabelProps={{ shrink: true }} fullWidth />
+                                    <TextField name="filePath" label="Патека до фајл" fullWidth sx={{ gridColumn: { xs: "1 / -1", md: "1 / 3" } }} />
+                                    <TextField name="sortOrder" label="Редослед" type="number" defaultValue={0} fullWidth />
+                                  </Box>
+                                  <Button type="submit" variant="outlined" sx={{ width: "fit-content", minHeight: 44 }}>
+                                    Додади сертификат
+                                  </Button>
+                                </Stack>
+                              </Box>
+                            </Stack>
+                          </AccordionDetails>
+                        </Accordion>
                       </Stack>
                     </Paper>
                   );

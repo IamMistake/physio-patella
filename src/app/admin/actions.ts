@@ -58,7 +58,7 @@ function buildAdminRedirectPath({
   return query.length > 0 ? `/admin?${query}` : "/admin";
 }
 
-function redirectWithError(message: string, tab?: string) {
+function redirectWithError(message: string, tab?: string): never {
   redirect(
     buildAdminRedirectPath({
       tab,
@@ -67,7 +67,7 @@ function redirectWithError(message: string, tab?: string) {
   );
 }
 
-function redirectWithNotice(message: string, tab?: string) {
+function redirectWithNotice(message: string, tab?: string): never {
   redirect(
     buildAdminRedirectPath({
       tab,
@@ -118,6 +118,49 @@ function toIsoDateTime(value: string) {
   return parsed.toISOString();
 }
 
+function toIsoFromDateAndTime(dateValue: string, timeValue: string) {
+  if (!dateValue || !timeValue) {
+    return null;
+  }
+
+  const normalizedTime = timeValue.length === 5 ? `${timeValue}:00` : timeValue;
+  const parsed = new Date(`${dateValue}T${normalizedTime}`);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString();
+}
+
+function addMinutesToIso(isoValue: string, minutes: number) {
+  const date = new Date(isoValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  date.setMinutes(date.getMinutes() + minutes);
+  return date.toISOString();
+}
+
+function timeValueToMinutes(value: string) {
+  const match = value.match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
+
+  if (!match) {
+    return Number.NaN;
+  }
+
+  const hours = Number.parseInt(match[1], 10);
+  const minutes = Number.parseInt(match[2], 10);
+
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    return Number.NaN;
+  }
+
+  return hours * 60 + minutes;
+}
+
 export async function adminLoginAction(formData: FormData) {
   const password = getString(formData, "password");
 
@@ -140,7 +183,7 @@ export async function createEmployeeAction(formData: FormData) {
   const name = getString(formData, "name");
 
   if (!name) {
-    redirectWithError("Името на вработениот е задолжително.");
+    redirectWithError("Името на вработениот е задолжително.", "staff");
   }
 
   const admin = createAdminClient();
@@ -155,11 +198,11 @@ export async function createEmployeeAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to create employee:", error);
-    redirectWithError("Не успеавме да додадеме вработен.");
+    redirectWithError("Не успеавме да додадеме вработен.", "staff");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Вработениот е додаден.");
+  redirectWithNotice("Вработениот е додаден.", "staff");
 }
 
 export async function updateEmployeeAction(formData: FormData) {
@@ -169,7 +212,7 @@ export async function updateEmployeeAction(formData: FormData) {
   const name = getString(formData, "name");
 
   if (!id || !name) {
-    redirectWithError("Недостасуваат податоци за ажурирање на вработен.");
+    redirectWithError("Недостасуваат податоци за ажурирање на вработен.", "staff");
   }
 
   const admin = createAdminClient();
@@ -187,11 +230,11 @@ export async function updateEmployeeAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to update employee:", error);
-    redirectWithError("Не успеавме да го ажурираме вработениот.");
+    redirectWithError("Не успеавме да го ажурираме вработениот.", "staff");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Вработениот е ажуриран.");
+  redirectWithNotice("Вработениот е ажуриран.", "staff");
 }
 
 export async function deleteEmployeeAction(formData: FormData) {
@@ -200,24 +243,44 @@ export async function deleteEmployeeAction(formData: FormData) {
   const id = getString(formData, "id");
 
   if (!id) {
-    redirectWithError("Недостасува ID за бришење на вработен.");
+    redirectWithError("Недостасува ID за бришење на вработен.", "staff");
   }
 
   const admin = createAdminClient();
-  const { error } = await admin.from("employees").delete().eq("id", id);
+  const { data: deletedAppointments, error: deleteAppointmentsError } = await admin
+    .from("appointments")
+    .delete()
+    .eq("employee_id", id)
+    .select("id");
 
-  if (error) {
-    console.error("Failed to delete employee:", error);
+  if (deleteAppointmentsError) {
+    console.error("Failed to delete related appointments:", deleteAppointmentsError);
+    redirectWithError("Не успеавме да ги избришеме поврзаните термини.", "staff");
+  }
 
-    if (error.code === "23503") {
-      redirectWithError("Не може да се избрише вработениот бидејќи има поврзани термини.");
-    }
+  const { data: deletedSlots, error: deleteSlotsError } = await admin
+    .from("appointment_slots")
+    .delete()
+    .eq("employee_id", id)
+    .select("id");
 
-    redirectWithError("Не успеавме да го избришеме вработениот.");
+  if (deleteSlotsError) {
+    console.error("Failed to delete related slots:", deleteSlotsError);
+    redirectWithError("Не успеавме да ги избришеме слотовите на вработениот.", "staff");
+  }
+
+  const { error: deleteEmployeeError } = await admin.from("employees").delete().eq("id", id);
+
+  if (deleteEmployeeError) {
+    console.error("Failed to delete employee:", deleteEmployeeError);
+    redirectWithError("Не успеавме да го избришеме вработениот.", "staff");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Вработениот е избришан.");
+  redirectWithNotice(
+    `Вработениот е избришан (термини: ${(deletedAppointments ?? []).length}, слотови: ${(deletedSlots ?? []).length}).`,
+    "staff",
+  );
 }
 
 export async function createCertificateAction(formData: FormData) {
@@ -227,7 +290,7 @@ export async function createCertificateAction(formData: FormData) {
   const title = getString(formData, "title");
 
   if (!employeeId || !title) {
-    redirectWithError("Вработен и наслов на сертификат се задолжителни.");
+    redirectWithError("Вработен и наслов на сертификат се задолжителни.", "staff");
   }
 
   const admin = createAdminClient();
@@ -243,11 +306,11 @@ export async function createCertificateAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to create certificate:", error);
-    redirectWithError("Не успеавме да додадеме сертификат.");
+    redirectWithError("Не успеавме да додадеме сертификат.", "staff");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Сертификатот е додаден.");
+  redirectWithNotice("Сертификатот е додаден.", "staff");
 }
 
 export async function updateCertificateAction(formData: FormData) {
@@ -257,7 +320,7 @@ export async function updateCertificateAction(formData: FormData) {
   const title = getString(formData, "title");
 
   if (!id || !title) {
-    redirectWithError("Недостасуваат податоци за ажурирање на сертификат.");
+    redirectWithError("Недостасуваат податоци за ажурирање на сертификат.", "staff");
   }
 
   const admin = createAdminClient();
@@ -275,11 +338,11 @@ export async function updateCertificateAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to update certificate:", error);
-    redirectWithError("Не успеавме да го ажурираме сертификатот.");
+    redirectWithError("Не успеавме да го ажурираме сертификатот.", "staff");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Сертификатот е ажуриран.");
+  redirectWithNotice("Сертификатот е ажуриран.", "staff");
 }
 
 export async function deleteCertificateAction(formData: FormData) {
@@ -288,7 +351,7 @@ export async function deleteCertificateAction(formData: FormData) {
   const id = getString(formData, "id");
 
   if (!id) {
-    redirectWithError("Недостасува ID за бришење на сертификат.");
+    redirectWithError("Недостасува ID за бришење на сертификат.", "staff");
   }
 
   const admin = createAdminClient();
@@ -296,11 +359,11 @@ export async function deleteCertificateAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to delete certificate:", error);
-    redirectWithError("Не успеавме да го избришеме сертификатот.");
+    redirectWithError("Не успеавме да го избришеме сертификатот.", "staff");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Сертификатот е избришан.");
+  redirectWithNotice("Сертификатот е избришан.", "staff");
 }
 
 export async function createDocumentAction(formData: FormData) {
@@ -309,7 +372,7 @@ export async function createDocumentAction(formData: FormData) {
   const title = getString(formData, "title");
 
   if (!title) {
-    redirectWithError("Насловот на документот е задолжителен.");
+    redirectWithError("Насловот на документот е задолжителен.", "documents");
   }
 
   const admin = createAdminClient();
@@ -325,11 +388,11 @@ export async function createDocumentAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to create document:", error);
-    redirectWithError("Не успеавме да додадеме документ.");
+    redirectWithError("Не успеавме да додадеме документ.", "documents");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Документот е додаден.");
+  redirectWithNotice("Документот е додаден.", "documents");
 }
 
 export async function updateDocumentAction(formData: FormData) {
@@ -339,7 +402,7 @@ export async function updateDocumentAction(formData: FormData) {
   const title = getString(formData, "title");
 
   if (!id || !title) {
-    redirectWithError("Недостасуваат податоци за ажурирање на документ.");
+    redirectWithError("Недостасуваат податоци за ажурирање на документ.", "documents");
   }
 
   const admin = createAdminClient();
@@ -358,11 +421,11 @@ export async function updateDocumentAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to update document:", error);
-    redirectWithError("Не успеавме да го ажурираме документот.");
+    redirectWithError("Не успеавме да го ажурираме документот.", "documents");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Документот е ажуриран.");
+  redirectWithNotice("Документот е ажуриран.", "documents");
 }
 
 export async function deleteDocumentAction(formData: FormData) {
@@ -371,7 +434,7 @@ export async function deleteDocumentAction(formData: FormData) {
   const id = getString(formData, "id");
 
   if (!id) {
-    redirectWithError("Недостасува ID за бришење на документ.");
+    redirectWithError("Недостасува ID за бришење на документ.", "documents");
   }
 
   const admin = createAdminClient();
@@ -379,11 +442,11 @@ export async function deleteDocumentAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to delete document:", error);
-    redirectWithError("Не успеавме да го избришеме документот.");
+    redirectWithError("Не успеавме да го избришеме документот.", "documents");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Документот е избришан.");
+  redirectWithNotice("Документот е избришан.", "documents");
 }
 
 export async function createAppointmentAction(formData: FormData) {
@@ -396,7 +459,7 @@ export async function createAppointmentAction(formData: FormData) {
   const status = normalizeStatus(getString(formData, "status"));
 
   if (!employeeId || !slotId || !clientName || !email) {
-    redirectWithError("За рачно креирање термин, сите задолжителни полиња мора да се пополнат.");
+    redirectWithError("За рачно креирање термин, сите задолжителни полиња мора да се пополнат.", "appointments");
   }
 
   const admin = createAdminClient();
@@ -412,11 +475,11 @@ export async function createAppointmentAction(formData: FormData) {
 
   if (reserveError) {
     console.error("Failed to reserve slot from admin:", reserveError);
-    redirectWithError("Не успеавме да го резервираме терминот.");
+    redirectWithError("Не успеавме да го резервираме терминот.", "appointments");
   }
 
   if (!reservedSlot) {
-    redirectWithError("Избраниот термин повеќе не е слободен.");
+    redirectWithError("Избраниот термин повеќе не е слободен.", "appointments");
   }
 
   const { error: insertError } = await admin.from("appointments").insert({
@@ -436,11 +499,11 @@ export async function createAppointmentAction(formData: FormData) {
       .eq("id", slotId);
 
     console.error("Failed to create appointment from admin:", insertError);
-    redirectWithError("Не успеавме да креираме термин.");
+    redirectWithError("Не успеавме да креираме термин.", "appointments");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Терминот е додаден.");
+  redirectWithNotice("Терминот е додаден.", "appointments");
 }
 
 export async function updateAppointmentAction(formData: FormData) {
@@ -450,7 +513,7 @@ export async function updateAppointmentAction(formData: FormData) {
   const status = normalizeStatus(getString(formData, "status"));
 
   if (!id) {
-    redirectWithError("Недостасува ID за ажурирање на термин.");
+    redirectWithError("Недостасува ID за ажурирање на термин.", "appointments");
   }
 
   const admin = createAdminClient();
@@ -468,11 +531,11 @@ export async function updateAppointmentAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to update appointment:", error);
-    redirectWithError("Не успеавме да го ажурираме терминот.");
+    redirectWithError("Не успеавме да го ажурираме терминот.", "appointments");
   }
 
   revalidateAdminData();
-  redirectWithNotice("Терминот е ажуриран.");
+  redirectWithNotice("Терминот е ажуриран.", "appointments");
 }
 
 export async function deleteAppointmentAction(formData: FormData) {
@@ -482,7 +545,7 @@ export async function deleteAppointmentAction(formData: FormData) {
   const slotId = getString(formData, "slotId");
 
   if (!id || !slotId) {
-    redirectWithError("Недостасуваат податоци за бришење на термин.");
+    redirectWithError("Недостасуваат податоци за бришење на термин.", "appointments");
   }
 
   const admin = createAdminClient();
@@ -490,7 +553,7 @@ export async function deleteAppointmentAction(formData: FormData) {
 
   if (error) {
     console.error("Failed to delete appointment:", error);
-    redirectWithError("Не успеавме да го избришеме терминот.");
+    redirectWithError("Не успеавме да го избришеме терминот.", "appointments");
   }
 
   const { error: slotError } = await admin
@@ -503,7 +566,145 @@ export async function deleteAppointmentAction(formData: FormData) {
   }
 
   revalidateAdminData();
-  redirectWithNotice("Терминот е избришан и слотот е ослободен.");
+  redirectWithNotice("Терминот е избришан и слотот е ослободен.", "appointments");
+}
+
+export async function createEmployeeSlotsAction(formData: FormData) {
+  await requireAdminSession();
+
+  const employeeId = getString(formData, "employeeId");
+  const date = getString(formData, "date");
+  const startTime = getString(formData, "startTime");
+  const endTime = getString(formData, "endTime");
+
+  if (!employeeId || !date || !startTime || !endTime) {
+    redirectWithError("Избери вработен, датум и временски опсег.", "staff");
+  }
+
+  const startIso = toIsoFromDateAndTime(date, startTime);
+  const endIso = toIsoFromDateAndTime(date, endTime);
+
+  const startMinutes = timeValueToMinutes(startTime);
+  const endMinutes = timeValueToMinutes(endTime);
+
+  if (
+    !Number.isFinite(startMinutes) ||
+    !Number.isFinite(endMinutes) ||
+    startMinutes % 30 !== 0 ||
+    endMinutes % 30 !== 0
+  ) {
+    redirectWithError("Почетното и крајното време мора да се на 30 минути (пример 10:00, 10:30).", "staff");
+  }
+
+  if (!startIso || !endIso) {
+    redirectWithError("Невалиден датум или време.", "staff");
+  }
+
+  const startDate = new Date(startIso);
+  const endDate = new Date(endIso);
+
+  if (endDate.getTime() <= startDate.getTime()) {
+    redirectWithError("Крајното време мора да е по почетното.", "staff");
+  }
+
+  const admin = createAdminClient();
+  const { data: existingSlots, error: existingSlotsError } = await admin
+    .from("appointment_slots")
+    .select("starts_at")
+    .eq("employee_id", employeeId)
+    .gte("starts_at", startIso)
+    .lt("starts_at", endIso);
+
+  if (existingSlotsError) {
+    console.error("Failed to query existing employee slots:", existingSlotsError);
+    redirectWithError("Не успеавме да ги провериме постојните слотови.", "staff");
+  }
+
+  const existingStartTimes = new Set(
+    ((existingSlots ?? []) as { starts_at: string }[]).map((slot) =>
+      new Date(slot.starts_at).getTime(),
+    ),
+  );
+
+  const slotRows: {
+    employee_id: string;
+    starts_at: string;
+    ends_at: string;
+    is_available: boolean;
+  }[] = [];
+
+  let cursorIso: string | null = startIso;
+
+  while (cursorIso) {
+    const cursorDate = new Date(cursorIso);
+
+    if (cursorDate.getTime() >= endDate.getTime()) {
+      break;
+    }
+
+    const nextIso = addMinutesToIso(cursorIso, 30);
+
+    if (!nextIso) {
+      break;
+    }
+
+    const nextDate = new Date(nextIso);
+
+    if (nextDate.getTime() > endDate.getTime()) {
+      break;
+    }
+
+    if (!existingStartTimes.has(cursorDate.getTime())) {
+      slotRows.push({
+        employee_id: employeeId,
+        starts_at: cursorIso,
+        ends_at: nextIso,
+        is_available: true,
+      });
+    }
+
+    cursorIso = nextIso;
+  }
+
+  if (slotRows.length === 0) {
+    redirectWithNotice("Нема нови слотови за додавање (веќе постојат).", "staff");
+  }
+
+  const { error } = await admin.from("appointment_slots").insert(slotRows);
+
+  if (error) {
+    console.error("Failed to create employee slots:", error);
+    redirectWithError("Не успеавме да додадеме слотови.", "staff");
+  }
+
+  revalidateAdminData();
+  redirectWithNotice(`Додадени се ${slotRows.length} слободни термини.`, "staff");
+}
+
+export async function deleteEmployeeSlotAction(formData: FormData) {
+  await requireAdminSession();
+
+  const slotId = getString(formData, "slotId");
+
+  if (!slotId) {
+    redirectWithError("Недостасува слот за бришење.", "staff");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("appointment_slots").delete().eq("id", slotId);
+
+  if (error) {
+    console.error("Failed to delete employee slot:", error);
+
+    if (error.code === "23503") {
+      redirectWithError("Овој слот не може да се избрише затоа што има закажан термин.", "staff");
+    }
+
+    redirectWithError("Не успеавме да го избришеме слотот.", "staff");
+  }
+
+  revalidateAdminData();
+  redirectWithNotice("Слотот е избришан.", "staff");
 }
 
 export async function createBlogPostAction(formData: FormData) {

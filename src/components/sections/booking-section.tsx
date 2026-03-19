@@ -267,6 +267,28 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
     [formState, selectedEmployee, selectedSlot],
   );
 
+  const bookingFieldSx = {
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 1.5,
+      minHeight: 50,
+      alignItems: "center",
+    },
+    "& .MuiOutlinedInput-root.MuiInputBase-multiline": {
+      minHeight: "unset",
+      alignItems: "flex-start",
+    },
+    "& .MuiInputBase-input": {
+      fontSize: "0.98rem",
+      lineHeight: 1.35,
+    },
+    "& .MuiInputBase-inputMultiline": {
+      lineHeight: 1.5,
+    },
+    "& .MuiInputLabel-root": {
+      fontSize: "0.92rem",
+    },
+  };
+
   return (
     <Box
       id="booking"
@@ -748,12 +770,9 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                           onChange={updateFormField("fullName")}
                           required
                           aria-required="true"
+                          InputLabelProps={{ shrink: true }}
                           fullWidth
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: 1.5,
-                            },
-                          }}
+                          sx={bookingFieldSx}
                         />
 
                         <TextField
@@ -763,24 +782,20 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                           onChange={updateFormField("email")}
                           required
                           aria-required="true"
+                          InputLabelProps={{ shrink: true }}
                           fullWidth
-                          sx={{
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: 1.5,
-                            },
-                          }}
+                          sx={bookingFieldSx}
                         />
 
                         <TextField
                           label="Телефон"
                           value={formState.phone}
                           onChange={updateFormField("phone")}
+                          InputLabelProps={{ shrink: true }}
                           fullWidth
                           sx={{
                             gridColumn: "1 / -1",
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: 1.5,
-                            },
+                            ...bookingFieldSx,
                           }}
                         />
 
@@ -790,12 +805,11 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                           onChange={updateFormField("notes")}
                           multiline
                           minRows={3}
+                          InputLabelProps={{ shrink: true }}
                           fullWidth
                           sx={{
                             gridColumn: "1 / -1",
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: 1.5,
-                            },
+                            ...bookingFieldSx,
                           }}
                         />
                       </Box>
@@ -804,7 +818,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                         <Alert
                           severity="error"
                           action={
-                              <Button color="inherit" size="small" onClick={() => setActiveStep(2)}>
+                            <Button color="inherit" size="small" onClick={() => setActiveStep(2)}>
                               Врати се назад
                             </Button>
                           }
