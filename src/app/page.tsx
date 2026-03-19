@@ -50,10 +50,40 @@ type BlogPostRow = {
   title: string;
   slug: string;
   excerpt: string | null;
+  cover_image: string | null;
   category: string | null;
   published_at: string | null;
   read_time_minutes: number | null;
+  author:
+    | {
+        name: string | null;
+      }
+    | {
+        name: string | null;
+      }[]
+    | null;
 };
+
+function getAuthorName(
+  author:
+    | {
+        name: string | null;
+      }
+    | {
+        name: string | null;
+      }[]
+    | null,
+) {
+  if (!author) {
+    return null;
+  }
+
+  if (Array.isArray(author)) {
+    return author[0]?.name ?? null;
+  }
+
+  return author.name;
+}
 
 async function getPageData() {
   const supabase = await createClient();
@@ -83,7 +113,9 @@ async function getPageData() {
       .order("starts_at", { ascending: true }),
     supabase
       .from("blog_posts")
-      .select("id, title, slug, excerpt, category, published_at, read_time_minutes")
+      .select(
+        "id, title, slug, excerpt, cover_image, category, published_at, read_time_minutes, author:employees(name)",
+      )
       .eq("is_published", true)
       .order("published_at", { ascending: false })
       .limit(3),
@@ -135,9 +167,11 @@ async function getPageData() {
       title: post.title,
       slug: post.slug,
       excerpt: post.excerpt,
+      cover_image: post.cover_image,
       category: post.category,
       published_at: post.published_at,
       read_time_minutes: post.read_time_minutes,
+      authorName: getAuthorName(post.author),
     }));
 
   return {

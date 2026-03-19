@@ -151,7 +151,14 @@ export default function HeroSection() {
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
             divider={
-              <Box sx={{ width: 1, height: 20, bgcolor: "rgba(255,255,255,0.2)" }} />
+              <Box
+                sx={{
+                  width: { xs: 20, sm: "1px" },
+                  height: { xs: "1px", sm: 20 },
+                  bgcolor: "rgba(255,255,255,0.22)",
+                  alignSelf: "center",
+                }}
+              />
             }
             sx={{
               borderTop: "1px solid rgba(255,255,255,0.2)",
