@@ -38,3 +38,27 @@ export type AppointmentSlot = {
   starts_at: string;
   ends_at: string;
 };
+
+export type BlogPostAuthor = {
+  name: string | null;
+  image_path: string | null;
+  specialization?: string | null;
+  description?: string | null;
+};
+
+export type BlogPost = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content?: string | null;
+  cover_image?: string | null;
+  category: string | null;
+  author_id?: string | null;
+  author?: BlogPostAuthor | null;
+  is_published?: boolean;
+  published_at: string | null;
+  read_time_minutes: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+};

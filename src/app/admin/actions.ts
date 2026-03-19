@@ -31,16 +31,54 @@ function getCheckbox(formData: FormData, key: string) {
   return formData.get(key) === "on";
 }
 
-function redirectWithError(message: string) {
-  redirect(`/admin?error=${encodeURIComponent(message)}`);
+function buildAdminRedirectPath({
+  tab,
+  notice,
+  error,
+}: {
+  tab?: string;
+  notice?: string;
+  error?: string;
+}) {
+  const params = new URLSearchParams();
+
+  if (tab) {
+    params.set("tab", tab);
+  }
+
+  if (notice) {
+    params.set("notice", notice);
+  }
+
+  if (error) {
+    params.set("error", error);
+  }
+
+  const query = params.toString();
+  return query.length > 0 ? `/admin?${query}` : "/admin";
 }
 
-function redirectWithNotice(message: string) {
-  redirect(`/admin?notice=${encodeURIComponent(message)}`);
+function redirectWithError(message: string, tab?: string) {
+  redirect(
+    buildAdminRedirectPath({
+      tab,
+      error: message,
+    }),
+  );
+}
+
+function redirectWithNotice(message: string, tab?: string) {
+  redirect(
+    buildAdminRedirectPath({
+      tab,
+      notice: message,
+    }),
+  );
 }
 
 function revalidateAdminData() {
   revalidatePath("/");
+  revalidatePath("/blog");
   revalidatePath("/admin");
 }
 
@@ -55,6 +93,29 @@ async function requireAdminSession() {
 function normalizeStatus(input: string) {
   const value = input.toLowerCase();
   return VALID_APPOINTMENT_STATUSES.has(value) ? value : "pending";
+}
+
+function slugify(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
+
+function toIsoDateTime(value: string) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString();
 }
 
 export async function adminLoginAction(formData: FormData) {
@@ -443,4 +504,143 @@ export async function deleteAppointmentAction(formData: FormData) {
 
   revalidateAdminData();
   redirectWithNotice("Терминот е избришан и слотот е ослободен.");
+}
+
+export async function createBlogPostAction(formData: FormData) {
+  await requireAdminSession();
+
+  const title = getString(formData, "title");
+  const providedSlug = getString(formData, "slug");
+  const slug = providedSlug || slugify(title);
+  const isPublished = getCheckbox(formData, "isPublished");
+  const publishedAtInput = getString(formData, "publishedAt");
+
+  if (!title || !slug) {
+    redirectWithError("Наслов и URL slug се задолжителни.", "blog");
+  }
+
+  const admin = createAdminClient();
+  const publishedAt = isPublished
+    ? toIsoDateTime(publishedAtInput) ?? new Date().toISOString()
+    : null;
+
+  const { error } = await admin.from("blog_posts").insert({
+    title,
+    slug,
+    category: getString(formData, "category") || "general",
+    excerpt: getOptionalString(formData, "excerpt"),
+    content: getOptionalString(formData, "content"),
+    cover_image: getOptionalString(formData, "coverImage"),
+    read_time_minutes: getInt(formData, "readTime", 5),
+    is_published: isPublished,
+    published_at: publishedAt,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    console.error("Failed to create blog post:", error);
+
+    if (error.code === "23505") {
+      redirectWithError("Веќе постои објава со овој slug.", "blog");
+    }
+
+    redirectWithError("Не успеавме да креираме блог објава.", "blog");
+  }
+
+  revalidateAdminData();
+  revalidatePath(`/blog/${slug}`);
+  redirectWithNotice("Блог објавата е зачувана.", "blog");
+}
+
+export async function updateBlogPostAction(formData: FormData) {
+  await requireAdminSession();
+
+  const id = getString(formData, "id");
+  const title = getString(formData, "title");
+  const providedSlug = getString(formData, "slug");
+  const slug = providedSlug || slugify(title);
+  const isPublished = getCheckbox(formData, "isPublished");
+  const publishedAtInput = getString(formData, "publishedAt");
+
+  if (!id || !title || !slug) {
+    redirectWithError("Недостасуваат податоци за ажурирање на блог објавата.", "blog");
+  }
+
+  const admin = createAdminClient();
+  const { data: existingPost } = await admin
+    .from("blog_posts")
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle();
+
+  const publishedAt = isPublished
+    ? toIsoDateTime(publishedAtInput) ?? new Date().toISOString()
+    : null;
+
+  const { error } = await admin
+    .from("blog_posts")
+    .update({
+      title,
+      slug,
+      category: getString(formData, "category") || "general",
+      excerpt: getOptionalString(formData, "excerpt"),
+      content: getOptionalString(formData, "content"),
+      cover_image: getOptionalString(formData, "coverImage"),
+      read_time_minutes: getInt(formData, "readTime", 5),
+      is_published: isPublished,
+      published_at: publishedAt,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Failed to update blog post:", error);
+
+    if (error.code === "23505") {
+      redirectWithError("Веќе постои објава со овој slug.", "blog");
+    }
+
+    redirectWithError("Не успеавме да ја ажурираме блог објавата.", "blog");
+  }
+
+  revalidateAdminData();
+
+  if (existingPost?.slug) {
+    revalidatePath(`/blog/${existingPost.slug}`);
+  }
+
+  revalidatePath(`/blog/${slug}`);
+  redirectWithNotice("Блог објавата е ажурирана.", "blog");
+}
+
+export async function deleteBlogPostAction(formData: FormData) {
+  await requireAdminSession();
+
+  const id = getString(formData, "id");
+
+  if (!id) {
+    redirectWithError("Недостасува ID за бришење на блог објава.", "blog");
+  }
+
+  const admin = createAdminClient();
+  const { data: existingPost } = await admin
+    .from("blog_posts")
+    .select("slug")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { error } = await admin.from("blog_posts").delete().eq("id", id);
+
+  if (error) {
+    console.error("Failed to delete blog post:", error);
+    redirectWithError("Не успеавме да ја избришеме блог објавата.", "blog");
+  }
+
+  revalidateAdminData();
+
+  if (existingPost?.slug) {
+    revalidatePath(`/blog/${existingPost.slug}`);
+  }
+
+  redirectWithNotice("Блог објавата е избришана.", "blog");
 }

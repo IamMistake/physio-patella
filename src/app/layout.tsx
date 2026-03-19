@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { DM_Serif_Display, Instrument_Sans } from "next/font/google";
 import { Box } from "@mui/material";
 import Footer from "@/components/layout/footer";
@@ -22,15 +23,21 @@ export const metadata: Metadata = {
   description: "Физиотерапија и хиропрактика во Скопје",
 };
 
-export default function RootLayout({
+const THEME_COOKIE_NAME = "physio-patella-theme-mode";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const cookieMode = cookieStore.get(THEME_COOKIE_NAME)?.value;
+  const initialMode = cookieMode === "dark" || cookieMode === "light" ? cookieMode : "light";
+
   return (
     <html lang="mk">
       <body className={`${dmSerif.variable} ${instrumentSans.variable} antialiased`}>
-        <AppThemeProvider>
+        <AppThemeProvider initialMode={initialMode}>
           <a className="skip-link" href="#main-content">
             Прескокни до главната содржина
           </a>

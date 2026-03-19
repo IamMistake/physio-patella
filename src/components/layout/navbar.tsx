@@ -28,13 +28,13 @@ type NavLink = {
 };
 
 const navLinks: NavLink[] = [
-  { label: "Почетна", href: "#home" },
-  { label: "Тим", href: "#team" },
-  { label: "Терапии", href: "#therapies" },
-  { label: "Искуства", href: "#blog" },
+  { label: "Почетна", href: "/#home" },
+  { label: "Тим", href: "/#team" },
+  { label: "Терапии", href: "/#therapies" },
+  { label: "Блог", href: "/blog" },
 ];
 
-const bookNowLink: NavLink = { label: "Закажи", href: "#booking" };
+const bookNowLink: NavLink = { label: "Закажи", href: "/#booking" };
 
 export default function Navbar() {
   const theme = useTheme();
@@ -85,6 +85,14 @@ export default function Navbar() {
 
   const isActiveLink = React.useCallback(
     (href: string) => {
+      if (href === "/blog") {
+        return pathname.startsWith("/blog");
+      }
+
+      if (href.startsWith("/#")) {
+        return pathname === "/" && activeHash === href.slice(1);
+      }
+
       if (href.startsWith("/")) {
         return pathname === href;
       }
@@ -123,7 +131,7 @@ export default function Navbar() {
             >
               <Box
                 component="a"
-                href="#home"
+                href="/#home"
                 sx={{
                   display: "inline-flex",
                   alignItems: "center",

@@ -17,11 +17,11 @@ import { alpha, useTheme } from "@mui/material/styles";
 import ThemeToggle from "@/components/theme/theme-toggle";
 
 const quickLinks = [
-  { label: "Почетна", href: "#home" },
-  { label: "Тим", href: "#team" },
-  { label: "Терапии", href: "#therapies" },
-  { label: "Искуства", href: "#blog" },
-  { label: "Закажи термин", href: "#booking" },
+  { label: "Почетна", href: "/#home" },
+  { label: "Тим", href: "/#team" },
+  { label: "Терапии", href: "/#therapies" },
+  { label: "Искуства", href: "/#blog" },
+  { label: "Закажи термин", href: "/#booking" },
 ];
 
 const mutedText = "rgba(255,255,255,0.75)";

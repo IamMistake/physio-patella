@@ -1,11 +1,13 @@
 import { Box } from "@mui/material";
 import BookingSection from "@/components/sections/booking-section";
+import BlogPreviewSection from "@/components/sections/blog-preview-section";
 import ConditionsSection from "@/components/sections/conditions-section";
 import DocumentsSection from "@/components/sections/documents-section";
 import EmployeesSection from "@/components/sections/employees-section";
 import HeroSection from "@/components/sections/hero-section";
 import JourneySection from "@/components/sections/journey-section";
 import ReviewsSection from "@/components/sections/reviews-section";
+import type { BlogCardPost } from "@/components/blog/blog-post-card";
 import { createClient } from "@/lib/supabase/server";
 import type { AppointmentSlot, Employee, Review, StudioDocument } from "@/types/physio";
 
@@ -43,10 +45,20 @@ type SlotRow = {
   ends_at: string;
 };
 
+type BlogPostRow = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  category: string | null;
+  published_at: string | null;
+  read_time_minutes: number | null;
+};
+
 async function getPageData() {
   const supabase = await createClient();
 
-  const [employeesResult, reviewsResult, documentsResult, slotsResult] = await Promise.all([
+  const [employeesResult, reviewsResult, documentsResult, slotsResult, latestPostsResult] = await Promise.all([
     supabase
       .from("employees")
       .select(
@@ -69,6 +81,12 @@ async function getPageData() {
       .select("id, employee_id, starts_at, ends_at")
       .eq("is_available", true)
       .order("starts_at", { ascending: true }),
+    supabase
+      .from("blog_posts")
+      .select("id, title, slug, excerpt, category, published_at, read_time_minutes")
+      .eq("is_published", true)
+      .order("published_at", { ascending: false })
+      .limit(3),
   ]);
 
   const employees: Employee[] = ((employeesResult.data as EmployeeRow[] | null) ?? []).map(
@@ -111,16 +129,28 @@ async function getPageData() {
 
   const slots: AppointmentSlot[] = (slotsResult.data as SlotRow[] | null) ?? [];
 
+  const latestPosts: BlogCardPost[] =
+    ((latestPostsResult.data as BlogPostRow[] | null) ?? []).map((post) => ({
+      id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      category: post.category,
+      published_at: post.published_at,
+      read_time_minutes: post.read_time_minutes,
+    }));
+
   return {
     employees,
     reviews,
     documents,
     slots,
+    latestPosts,
   };
 }
 
 export default async function Home() {
-  const { employees, reviews, documents, slots } = await getPageData();
+  const { employees, reviews, documents, slots, latestPosts } = await getPageData();
 
   return (
     <Box component="div">
@@ -132,6 +162,7 @@ export default async function Home() {
       <Box id="blog" sx={{ scrollMarginTop: { xs: "56px", md: "64px" } }} />
       <ReviewsSection reviews={reviews} />
       <DocumentsSection documents={documents} />
+      <BlogPreviewSection posts={latestPosts} />
       <BookingSection employees={employees} slots={slots} />
     </Box>
   );

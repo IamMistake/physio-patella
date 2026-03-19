@@ -9,10 +9,13 @@ import {
   MenuItem,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   TextField,
   Typography,
 } from "@mui/material";
 import { redirect } from "next/navigation";
+import BlogPostsManager from "@/components/admin/blog-posts-manager";
 import { hasAdminSession } from "@/lib/admin-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -36,10 +39,12 @@ type AdminPageProps = {
     | {
         notice?: string;
         error?: string;
+        tab?: string;
       }
     | Promise<{
         notice?: string;
         error?: string;
+        tab?: string;
       }>;
 };
 
@@ -113,6 +118,20 @@ type SlotRow = {
   ends_at: string;
 };
 
+type BlogPostRow = {
+  id: string;
+  title: string;
+  slug: string;
+  category: string | null;
+  excerpt: string | null;
+  content: string | null;
+  cover_image: string | null;
+  read_time_minutes: number | null;
+  is_published: boolean;
+  published_at: string | null;
+  created_at: string | null;
+};
+
 function formatDateTime(dateTimeIso: string) {
   return new Intl.DateTimeFormat("mk-MK", {
     day: "2-digit",
@@ -164,13 +183,26 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   }
 
   const resolvedSearchParams =
-    searchParams && typeof (searchParams as Promise<{ notice?: string; error?: string }>).then === "function"
-      ? await (searchParams as Promise<{ notice?: string; error?: string }>)
-      : (searchParams as { notice?: string; error?: string } | undefined);
+    searchParams &&
+    typeof (searchParams as Promise<{ notice?: string; error?: string; tab?: string }>).then ===
+      "function"
+      ? await (searchParams as Promise<{ notice?: string; error?: string; tab?: string }>)
+      : (searchParams as { notice?: string; error?: string; tab?: string } | undefined);
+
+  const tabParam = resolvedSearchParams?.tab ?? "appointments";
+  const activeTab = ["appointments", "staff", "documents", "blog"].includes(tabParam)
+    ? tabParam
+    : "appointments";
 
   const admin = createAdminClient();
 
-  const [employeesResult, documentsResult, appointmentsResult, availableSlotsResult] =
+  const [
+    employeesResult,
+    documentsResult,
+    appointmentsResult,
+    availableSlotsResult,
+    blogPostsResult,
+  ] =
     await Promise.all([
       admin
         .from("employees")
@@ -195,18 +227,26 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
         .eq("is_available", true)
         .order("starts_at", { ascending: true })
         .limit(200),
+      admin
+        .from("blog_posts")
+        .select(
+          "id, title, slug, category, excerpt, content, cover_image, read_time_minutes, is_published, published_at, created_at",
+        )
+        .order("created_at", { ascending: false }),
     ]);
 
   const employees = (employeesResult.data as EmployeeRow[] | null) ?? [];
   const documents = (documentsResult.data as DocumentRow[] | null) ?? [];
   const appointments = (appointmentsResult.data as AppointmentRow[] | null) ?? [];
   const availableSlots = (availableSlotsResult.data as SlotRow[] | null) ?? [];
+  const blogPosts = (blogPostsResult.data as BlogPostRow[] | null) ?? [];
 
   const queryErrors = [
     employeesResult.error,
     documentsResult.error,
     appointmentsResult.error,
     availableSlotsResult.error,
+    blogPostsResult.error,
   ].filter(Boolean);
 
   const employeeNameById = new Map<string, string>();
@@ -252,7 +292,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             <Alert severity="error">Има проблем при вчитување на дел од податоците. Провери Supabase конфигурација.</Alert>
           ) : null}
 
-          <Paper sx={{ p: { xs: 2.5, md: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
+          <Paper sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2.5, p: 0.5 }}>
+            <Tabs
+              value={activeTab}
+              variant="scrollable"
+              scrollButtons="auto"
+              aria-label="Админ табови"
+            >
+              <Tab component="a" href="/admin?tab=appointments" value="appointments" label="Термини" />
+              <Tab component="a" href="/admin?tab=staff" value="staff" label="Вработени" />
+              <Tab component="a" href="/admin?tab=documents" value="documents" label="Документи" />
+              <Tab component="a" href="/admin?tab=blog" value="blog" label="Blog posts" />
+            </Tabs>
+          </Paper>
+
+          {activeTab === "appointments" ? (
+            <Paper sx={{ p: { xs: 2.5, md: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
             <Stack spacing={2.2}>
               <Typography variant="h2" sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.4rem", md: "1.8rem" } }}>
                 Термини
@@ -403,9 +458,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 )}
               </Stack>
             </Stack>
-          </Paper>
+            </Paper>
+          ) : null}
 
-          <Paper sx={{ p: { xs: 2.5, md: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
+          {activeTab === "staff" ? (
+            <Paper sx={{ p: { xs: 2.5, md: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
             <Stack spacing={2.2}>
               <Typography variant="h2" sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.4rem", md: "1.8rem" } }}>
                 Вработени и сертификати
@@ -608,9 +665,11 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 })}
               </Stack>
             </Stack>
-          </Paper>
+            </Paper>
+          ) : null}
 
-          <Paper sx={{ p: { xs: 2.5, md: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
+          {activeTab === "documents" ? (
+            <Paper sx={{ p: { xs: 2.5, md: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
             <Stack spacing={2.2}>
               <Typography variant="h2" sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.4rem", md: "1.8rem" } }}>
                 Документи
@@ -704,7 +763,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 )}
               </Stack>
             </Stack>
-          </Paper>
+            </Paper>
+          ) : null}
+
+          {activeTab === "blog" ? (
+            <Paper sx={{ p: { xs: 2.5, md: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
+              <Stack spacing={2.2}>
+                <Typography
+                  variant="h2"
+                  sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.4rem", md: "1.8rem" } }}
+                >
+                  Blog posts
+                </Typography>
+                <BlogPostsManager posts={blogPosts} />
+              </Stack>
+            </Paper>
+          ) : null}
         </Stack>
       </Container>
     </Box>

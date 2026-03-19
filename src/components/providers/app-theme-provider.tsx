@@ -18,6 +18,7 @@ const ThemeModeContext = React.createContext<ThemeModeContextValue | undefined>(
 
 type AppThemeProviderProps = {
   children: React.ReactNode;
+  initialMode?: AppThemeMode;
 };
 
 export function useThemeMode() {
@@ -32,16 +33,21 @@ export function useThemeMode() {
 
 export default function AppThemeProvider({
   children,
+  initialMode = "light",
 }: AppThemeProviderProps) {
-  const [mode, setMode] = React.useState<AppThemeMode>("light");
-  const [hasLoadedPreference, setHasLoadedPreference] = React.useState(false);
+  const [mode, setMode] = React.useState<AppThemeMode>(initialMode);
+  const [hasResolvedPreference, setHasResolvedPreference] = React.useState(false);
 
   React.useEffect(() => {
     const savedMode = window.localStorage.getItem(THEME_STORAGE_KEY);
 
     if (savedMode === "light" || savedMode === "dark") {
-      setMode(savedMode);
-      setHasLoadedPreference(true);
+      if (savedMode !== initialMode) {
+        setMode(savedMode);
+      }
+
+      setHasResolvedPreference(true);
+
       return;
     }
 
@@ -49,20 +55,21 @@ export default function AppThemeProvider({
       "(prefers-color-scheme: dark)",
     ).matches;
 
-    if (systemPrefersDark) {
+    if (systemPrefersDark && initialMode !== "dark") {
       setMode("dark");
     }
 
-    setHasLoadedPreference(true);
-  }, []);
+    setHasResolvedPreference(true);
+  }, [initialMode]);
 
   React.useEffect(() => {
-    if (!hasLoadedPreference) {
+    if (!hasResolvedPreference) {
       return;
     }
 
     window.localStorage.setItem(THEME_STORAGE_KEY, mode);
-  }, [mode, hasLoadedPreference]);
+    document.cookie = `${THEME_STORAGE_KEY}=${mode}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  }, [mode, hasResolvedPreference]);
 
   const toggleTheme = React.useCallback(() => {
     setMode((previousMode) => (previousMode === "light" ? "dark" : "light"));
