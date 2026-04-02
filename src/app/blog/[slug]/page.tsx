@@ -110,7 +110,7 @@ function formatCategoryLabel(category: string | null) {
   const labelByCategory: Record<string, string> = {
     "injury-rehab": "Рехабилитација",
     exercises: "Вежби",
-    chiropractic: "Хиропрактика",
+    chiropractic: "Киропрактика",
     nutrition: "Исхрана",
     "mental-health": "Ментално здравје",
     news: "Новости",
@@ -165,18 +165,18 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     return {
       title: "Блог | Physio Patella",
       description:
-        "Стручни совети за физиотерапија и хиропрактика од тимот на Physio Patella.",
+        "Стручни совети за физиотерапија и киропрактика од тимот на Physio Patella.",
     };
   }
 
   return {
     title: `${data.title} | Physio Patella`,
     description:
-      data.excerpt ?? "Стручни совети за физиотерапија и хиропрактика од тимот на Physio Patella.",
+      data.excerpt ?? "Стручни совети за физиотерапија и киропрактика од тимот на Physio Patella.",
     openGraph: {
       title: data.title,
       description:
-        data.excerpt ?? "Стручни совети за физиотерапија и хиропрактика од тимот на Physio Patella.",
+        data.excerpt ?? "Стручни совети за физиотерапија и киропрактика од тимот на Physio Patella.",
     },
   };
 }
@@ -195,6 +195,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   const author = getAuthor(post.author);
   const postImagePath = resolveImagePath(post.cover_image);
+  const isPostImageSvg = postImagePath?.split("?")[0].toLowerCase().endsWith(".svg") ?? false;
   const paragraphs = (post.content ?? "")
     .split(/\n\n+/)
     .map((paragraph) => paragraph.trim())
@@ -307,6 +308,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 alt={post.title}
                 fill
                 sizes="(max-width: 900px) 100vw, 768px"
+                unoptimized={isPostImageSvg}
                 style={{ objectFit: "cover" }}
               />
             </Box>

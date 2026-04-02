@@ -38,7 +38,7 @@ function formatCategoryLabel(category: string | null) {
   const labelByCategory: Record<string, string> = {
     "injury-rehab": "Рехабилитација",
     exercises: "Вежби",
-    chiropractic: "Хиропрактика",
+    chiropractic: "Киропрактика",
     nutrition: "Исхрана",
     "mental-health": "Ментално здравје",
     news: "Новости",
@@ -62,6 +62,7 @@ function formatPublishedDate(value: string | null) {
 
 export default function BlogPostCard({ post }: BlogPostCardProps) {
   const imagePath = resolveImagePath(post.cover_image);
+  const isSvgImage = imagePath?.split("?")[0].toLowerCase().endsWith(".svg") ?? false;
 
   return (
     <Link href={`/blog/${post.slug}`} style={{ textDecoration: "none", display: "block" }}>
@@ -88,6 +89,7 @@ export default function BlogPostCard({ post }: BlogPostCardProps) {
               alt={post.title}
               fill
               sizes="(max-width: 900px) 100vw, 33vw"
+              unoptimized={isSvgImage}
               style={{ objectFit: "cover" }}
             />
           ) : (

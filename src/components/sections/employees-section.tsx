@@ -33,7 +33,24 @@ function getInitials(name: string | null) {
     .join("");
 }
 
+function getShortDescription(description: string | null) {
+  if (!description) {
+    return "Персонализирана нега фокусирана на опоравување и долгорочна мобилност.";
+  }
+
+  const trimmed = description.trim();
+  const firstSentence = trimmed.split(/[.!?]\s/)[0]?.trim() ?? trimmed;
+  const shortValue = firstSentence.length > 120 ? `${firstSentence.slice(0, 117)}...` : firstSentence;
+
+  return shortValue;
+}
+
 export default function EmployeesSection({ employees }: EmployeesSectionProps) {
+  const desktopColumns =
+    employees.length >= 3
+      ? "repeat(3, minmax(0, 1fr))"
+      : `repeat(${Math.max(employees.length, 1)}, minmax(0, 340px))`;
+
   return (
     <Box
       id="team"
@@ -61,8 +78,13 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", md: "repeat(3, minmax(0, 1fr))" },
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "repeat(2, minmax(0, 1fr))",
+                md: desktopColumns,
+              },
               gap: 3,
+              justifyContent: "center",
             }}
           >
             {employees.map((employee, employeeIndex) => {
@@ -180,11 +202,21 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                       WebkitBoxOrient: "vertical",
                     }}
                   >
-                    {employee.description ?? "Персонализирана нега фокусирана на опоравување и долгорочна мобилност."}
+                    {getShortDescription(employee.description)}
                   </Typography>
 
                   <Stack spacing={0.7} alignItems="center" sx={{ flexGrow: 1, justifyContent: "flex-end", mt: 1.5 }}>
-                    <Box sx={{ width: 40, height: 1, bgcolor: "divider", mx: "auto", my: 1.5 }} />
+                    <Box sx={{ width: 40, height: "1px", bgcolor: "divider", mx: "auto", my: 1.5 }} />
+                    {employee.phone_primary ? (
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", textAlign: "center" }}>
+                        Тел: {employee.phone_primary}
+                      </Typography>
+                    ) : null}
+                    {employee.phone_secondary ? (
+                      <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", textAlign: "center" }}>
+                        Бизнис: {employee.phone_secondary}
+                      </Typography>
+                    ) : null}
                     {visibleCertificates.map((certificate) => (
                       <Stack key={certificate.id} direction="row" spacing={0.6} alignItems="center">
                         <CheckRoundedIcon sx={{ fontSize: 12, color: "primary.main" }} />

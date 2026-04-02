@@ -38,7 +38,7 @@ const bookingSteps = ["Избери терапевт", "Избери датум"
 const bookingStepDescriptions = [
   "Избери го специјалистот",
   "Прикажани се достапни датуми",
-  "Сесии од 30 минути",
+  "Сесии од 1ч 30мин",
   "Име, е-пошта и телефон",
 ];
 
@@ -728,7 +728,7 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                                     {formatTimeLabel(slot.starts_at)}
                                   </Typography>
                                   <Typography component="span" sx={{ fontSize: "0.625rem", opacity: 0.9 }}>
-                                    30 min
+                                    1h 30min
                                   </Typography>
                                 </Stack>
                               </ToggleButton>

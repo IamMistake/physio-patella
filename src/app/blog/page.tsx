@@ -18,7 +18,7 @@ import { createClient } from "@/lib/supabase/server";
 export const metadata = {
   title: "Блог | Physio Patella",
   description:
-    "Стручни совети за физиотерапија и хиропрактика од тимот на Physio Patella.",
+    "Стручни совети за физиотерапија и киропрактика од тимот на Physio Patella.",
 };
 
 type BlogPageProps = {
@@ -58,7 +58,7 @@ const categoryOptions = [
   { slug: "all", label: "Сите" },
   { slug: "exercises", label: "Вежби" },
   { slug: "injury-rehab", label: "Рехабилитација" },
-  { slug: "chiropractic", label: "Хиропрактика" },
+  { slug: "chiropractic", label: "Киропрактика" },
   { slug: "nutrition", label: "Исхрана" },
   { slug: "mental-health", label: "Ментално здравје" },
   { slug: "news", label: "Новости" },
@@ -156,6 +156,8 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
   });
 
   const featuredPost = posts[0];
+  const featuredImagePath = resolveImagePath(featuredPost?.cover_image ?? null);
+  const isFeaturedImageSvg = featuredImagePath?.split("?")[0].toLowerCase().endsWith(".svg") ?? false;
   const remainingPosts: BlogCardPost[] = posts.slice(1).map((post) => ({
     id: post.id,
     title: post.title,
@@ -260,12 +262,13 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                   flex: { md: "0 0 45%" },
                 }}
               >
-                {resolveImagePath(featuredPost.cover_image) ? (
+                {featuredImagePath ? (
                   <Image
-                    src={resolveImagePath(featuredPost.cover_image) as string}
+                    src={featuredImagePath}
                     alt={featuredPost.title}
                     fill
                     sizes="(max-width: 900px) 100vw, 45vw"
+                    unoptimized={isFeaturedImageSvg}
                     style={{ objectFit: "cover" }}
                   />
                 ) : (

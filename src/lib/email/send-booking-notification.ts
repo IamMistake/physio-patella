@@ -35,7 +35,7 @@ export async function sendBookingNotificationEmail(payload: BookingNotificationP
 
   const from = process.env.EMAIL_FROM ?? "Physio Patella <onboarding@resend.dev>";
   const normalizedSiteUrl = payload.siteUrl.replace(/\/$/, "");
-  const logoUrl = `${normalizedSiteUrl}/physiopatella_logo.jpg`;
+  const logoUrl = `${normalizedSiteUrl}/physiopatella_logo_no_bg.png`;
   const startsAtFormatted = formatDateTime(payload.startsAt);
   const endsAtFormatted = formatDateTime(payload.endsAt);
 

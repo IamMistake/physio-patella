@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import DeleteRoundedIcon from "@mui/icons-material/DeleteRounded";
 import EditRoundedIcon from "@mui/icons-material/EditRounded";
 import {
@@ -135,6 +136,12 @@ export default function BlogPostsManager({ posts }: BlogPostsManagerProps) {
   const [formState, setFormState] = React.useState<BlogPostFormState>(createEmptyState());
   const [deleteTarget, setDeleteTarget] = React.useState<{ id: string; title: string } | null>(null);
   const [isPending, startTransition] = React.useTransition();
+  const [copyFeedback, setCopyFeedback] = React.useState<string | null>(null);
+  const [siteOrigin, setSiteOrigin] = React.useState("");
+
+  React.useEffect(() => {
+    setSiteOrigin(window.location.origin);
+  }, []);
 
   const dialogTitle = formState.id ? "Edit post" : "New post";
 
@@ -215,6 +222,17 @@ export default function BlogPostsManager({ posts }: BlogPostsManagerProps) {
     });
   };
 
+  const resolvedPostUrl = `${siteOrigin}/blog/${formState.slug || "your-post-slug"}`;
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(resolvedPostUrl);
+      setCopyFeedback("Линкот е копиран.");
+    } catch {
+      setCopyFeedback("Не успеавме да копираме линк.");
+    }
+  };
+
   return (
     <Stack spacing={2}>
       <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "stretch", sm: "center" }} spacing={1.5}>
@@ -285,7 +303,7 @@ export default function BlogPostsManager({ posts }: BlogPostsManagerProps) {
 
       <Dialog open={isDialogOpen} onClose={closeDialog} fullWidth maxWidth="md">
         <DialogTitle>{dialogTitle}</DialogTitle>
-        <Box component="form" onSubmit={handleSave}>
+        <Box component="form" onSubmit={handleSave} encType="multipart/form-data">
           <DialogContent>
             <Stack spacing={1.5}>
               <TextField
@@ -311,6 +329,30 @@ export default function BlogPostsManager({ posts }: BlogPostsManagerProps) {
                 required
                 fullWidth
               />
+
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ xs: "stretch", sm: "center" }}>
+                <TextField
+                  label="Post URL"
+                  value={resolvedPostUrl}
+                  InputProps={{ readOnly: true }}
+                  fullWidth
+                />
+                <Button
+                  type="button"
+                  variant="outlined"
+                  startIcon={<ContentCopyRoundedIcon />}
+                  onClick={handleCopyLink}
+                  sx={{ minHeight: 44, whiteSpace: "nowrap" }}
+                >
+                  Copy link
+                </Button>
+              </Stack>
+
+              {copyFeedback ? (
+                <Typography sx={{ fontSize: "0.82rem", color: copyFeedback.includes("не") ? "error.main" : "success.main" }}>
+                  {copyFeedback}
+                </Typography>
+              ) : null}
 
               <TextField
                 select
@@ -364,7 +406,7 @@ export default function BlogPostsManager({ posts }: BlogPostsManagerProps) {
 
               <TextField
                 name="coverImage"
-                label="Cover image path"
+                label="Cover image URL or path"
                 value={formState.coverImage}
                 onChange={(event) =>
                   setFormState((previousState) => ({
@@ -372,6 +414,7 @@ export default function BlogPostsManager({ posts }: BlogPostsManagerProps) {
                     coverImage: event.target.value,
                   }))
                 }
+                helperText="Пример: /media/blog/example.jpg или https://example.com/image.jpg"
                 fullWidth
               />
 

@@ -117,7 +117,7 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   const recipientEmail =
-    process.env.BOOKING_NOTIFICATION_EMAIL ?? "jagurinoskini@gmail.com";
+    process.env.BOOKING_NOTIFICATION_EMAIL ?? "physiopatella.therapy@gmail.com";
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
 
   try {

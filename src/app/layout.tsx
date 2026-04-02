@@ -20,7 +20,12 @@ const instrumentSans = Instrument_Sans({
 
 export const metadata: Metadata = {
   title: "Physio Patella",
-  description: "Физиотерапија и хиропрактика во Скопје",
+  description: "Физиотерапија и киропрактика во Скопје",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/physiopatella_logo.jpg",
+  },
 };
 
 const THEME_COOKIE_NAME = "physio-patella-theme-mode";

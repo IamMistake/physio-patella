@@ -13,7 +13,20 @@ export type Employee = {
   description: string | null;
   image_path: string | null;
   specialization: string | null;
+  phone_primary?: string | null;
+  phone_secondary?: string | null;
   certificates: EmployeeCertificate[];
+};
+
+export type Treatment = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  icon_path: string | null;
+  image_path: string | null;
+  blog_post_slug: string;
+  sort_order: number;
 };
 
 export type Review = {

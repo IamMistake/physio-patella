@@ -140,10 +140,10 @@ export default function Navbar() {
                 }}
               >
                 <Image
-                  src="/physiopatella_logo.jpg"
+                  src="/physiopatella_logo_no_bg.png"
                   alt="Physio Patella logo"
-                  width={36}
-                  height={36}
+                  width={44}
+                  height={44}
                   style={{ borderRadius: 8 }}
                 />
                 <Typography
@@ -281,10 +281,10 @@ export default function Navbar() {
         >
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1, mb: 2 }}>
             <Image
-              src="/physiopatella_logo.jpg"
+              src="/physiopatella_logo_no_bg.png"
               alt="Physio Patella logo"
-              width={36}
-              height={36}
+              width={44}
+              height={44}
               style={{ borderRadius: 8 }}
             />
             <Typography

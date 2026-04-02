@@ -1,17 +1,13 @@
-import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
+import Link from "next/link";
 import { Box, Container, Stack, Typography } from "@mui/material";
 import SectionOverline from "@/components/ui/section-overline";
+import type { Treatment } from "@/types/physio";
 
-const conditions = [
-  { label: "Рамо", src: "https://img.icons8.com/?size=100&id=1804&format=png&color=FFFFFF" },
-  { label: "Лакот", src: "https://img.icons8.com/?size=100&id=qwEAb2Lxoaqg&format=png" },
-  { label: "Колк", src: "https://img.icons8.com/?size=100&id=NUqaAADfLgWX&format=png&color=FFFFFF" },
-  { label: "Колено", src: "https://img.icons8.com/?size=100&id=tBwVH3f61ZWb&format=png" },
-  { label: "Глужд", src: "https://img.icons8.com/?size=100&id=R5WIkTqrpDMd&format=png" },
-  { label: "Рбет", src: "https://img.icons8.com/?size=100&id=6noy0BT6FFQ0&format=png" },
-];
+type ConditionsSectionProps = {
+  treatments: Treatment[];
+};
 
-export default function ConditionsSection() {
+export default function ConditionsSection({ treatments }: ConditionsSectionProps) {
   return (
     <Box
       component="section"
@@ -41,78 +37,62 @@ export default function ConditionsSection() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "repeat(3, minmax(0, 1fr))", sm: "repeat(6, minmax(0, 1fr))" },
+              gridTemplateColumns: "repeat(auto-fit, minmax(120px, 120px))",
               gap: { xs: 1, md: 2 },
+              justifyContent: "center",
             }}
           >
-            {conditions.map((condition) => (
-              <Stack
-                key={condition.label}
-                spacing={1}
-                alignItems="center"
-                sx={{
-                  cursor: "pointer",
-                  "&:hover .condition-circle": {
-                    bgcolor: "primary.main",
-                    borderColor: "primary.main",
-                    boxShadow:
-                      "0 0 0 4px color-mix(in srgb, var(--mui-palette-primary-main) 10%, transparent)",
-                  },
-                  "&:hover .condition-icon": {
-                    filter:
-                      "brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(1%) hue-rotate(238deg) brightness(104%) contrast(101%)",
-                  },
-                }}
-              >
-                <Box
-                  className="condition-circle"
+            {treatments.map((treatment) => (
+              <Link key={treatment.id} href={`/blog/${treatment.blog_post_slug}`} style={{ textDecoration: "none" }}>
+                <Stack
+                  spacing={1}
+                  alignItems="center"
                   sx={{
-                    width: 96,
-                    height: 96,
-                    borderRadius: "50%",
-                    bgcolor: "color-mix(in srgb, var(--mui-palette-primary-main) 8%, transparent)",
-                    border: "2px solid color-mix(in srgb, var(--mui-palette-primary-main) 35%, transparent)",
-                    display: "grid",
-                    placeItems: "center",
-                    transition: "all 0.2s ease",
+                    "&:hover .condition-circle": {
+                      bgcolor: "primary.main",
+                      borderColor: "primary.main",
+                      boxShadow:
+                        "0 0 0 4px color-mix(in srgb, var(--mui-palette-primary-main) 10%, transparent)",
+                    },
+                    "&:hover .condition-icon": {
+                      filter:
+                        "brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(1%) hue-rotate(238deg) brightness(104%) contrast(101%)",
+                    },
                   }}
                 >
                   <Box
-                    component="img"
-                    src={condition.src}
-                    alt={`${condition.label} икона`}
-                    className="condition-icon"
+                    className="condition-circle"
                     sx={{
-                      width: "2.2rem",
-                      height: "2.2rem",
-                      transition: "filter 0.2s ease",
-                      filter:
-                        "brightness(0) saturate(100%) invert(35%) sepia(50%) saturate(514%) hue-rotate(145deg) brightness(95%) contrast(88%)",
+                      width: 96,
+                      height: 96,
+                      borderRadius: "50%",
+                      bgcolor: "color-mix(in srgb, var(--mui-palette-primary-main) 8%, transparent)",
+                      border: "2px solid color-mix(in srgb, var(--mui-palette-primary-main) 35%, transparent)",
+                      display: "grid",
+                      placeItems: "center",
+                      transition: "all 0.2s ease",
                     }}
-                  />
-                </Box>
-                <Typography sx={{ fontSize: "0.8125rem", fontWeight: 500, textAlign: "center", color: "text.primary", mt: 1 }}>
-                  {condition.label}
-                </Typography>
-              </Stack>
+                  >
+                    <Box
+                      component="img"
+                      src={treatment.icon_path ?? treatment.image_path ?? "/file.svg"}
+                      alt={`${treatment.title} икона`}
+                      className="condition-icon"
+                      sx={{
+                        width: "2.2rem",
+                        height: "2.2rem",
+                        transition: "filter 0.2s ease",
+                        filter:
+                          "brightness(0) saturate(100%) invert(35%) sepia(50%) saturate(514%) hue-rotate(145deg) brightness(95%) contrast(88%)",
+                      }}
+                    />
+                  </Box>
+                  <Typography sx={{ fontSize: "0.8125rem", fontWeight: 500, textAlign: "center", color: "text.primary", mt: 1 }}>
+                    {treatment.title}
+                  </Typography>
+                </Stack>
+              </Link>
             ))}
-          </Box>
-
-          <Box sx={{ mt: 5, textAlign: "center" }}>
-            <Typography
-              component="span"
-              sx={{
-                fontSize: "0.82rem",
-                color: "primary.main",
-                cursor: "pointer",
-                "&:hover": {
-                  textDecoration: "underline",
-                },
-              }}
-            >
-              Види ги сите состојби и терапии
-              <ArrowForwardRoundedIcon sx={{ fontSize: 14, ml: 0.5, verticalAlign: "middle" }} />
-            </Typography>
           </Box>
         </Stack>
       </Container>

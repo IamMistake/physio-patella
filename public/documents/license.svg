@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200">
+  <rect width="900" height="1200" fill="#f8fafc"/>
+  <rect x="70" y="70" width="760" height="1060" fill="#ffffff" stroke="#0f766e" stroke-width="8"/>
+  <text x="450" y="180" text-anchor="middle" fill="#0f766e" font-size="48" font-family="Arial, sans-serif">Лиценца за работа</text>
+  <text x="450" y="250" text-anchor="middle" fill="#334155" font-size="30" font-family="Arial, sans-serif">Physio Patella</text>
+  <text x="110" y="360" fill="#475569" font-size="24" font-family="Arial, sans-serif">Овој документ е пример за јавен приказ во портфолио.</text>
+</svg>

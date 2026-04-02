@@ -49,7 +49,7 @@ values
     'Start with gentle movement, not intensity. Controlled pelvic tilts, cat-cow motion, and supported child''s pose help your spine move through safe ranges and reduce stiffness from prolonged sitting.' || E'\n\n' ||
     'Once pain settles, add stability drills like dead bugs and glute bridges. These movements train your core and hips to share load better, so your lower back does not compensate during everyday tasks.' || E'\n\n' ||
     'Finish with consistency over perfection. Ten to fifteen minutes, four to five days per week, is often more effective than one long session. If pain radiates to the leg or worsens, get an in-person assessment.',
-    'https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=1400&auto=format&fit=crop',
+    '/media/blog/klinichka-masaza-i-rehabilitacija.svg',
     'exercises',
     '6a8f95f1-44b1-4e4b-9a90-89f0b1c26a11',
     true,
@@ -63,7 +63,7 @@ values
     'Your first appointment starts with history and posture review. Your therapist will ask about pain triggers, previous injuries, work routine, and activity level to understand where your symptoms come from.' || E'\n\n' ||
     'Next comes movement testing and joint assessment. You may hear a small click during adjustment, but the goal is improved joint mechanics, not force. Techniques are selected based on your comfort and findings.' || E'\n\n' ||
     'After treatment, you usually receive simple home advice for the next 24 to 48 hours. Mild soreness can happen, similar to post-workout discomfort. Follow-up care is planned according to your response and goals.',
-    'https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=1400&auto=format&fit=crop',
+    '/media/blog/kiropraktichki-tehniki.svg',
     'chiropractic',
     '0f1f6fb6-2ea2-49f5-927f-01d0c8d2dd22',
     true,
@@ -77,7 +77,7 @@ values
     'Dry needling uses a fine filament needle to stimulate trigger points in affected muscles. The goal is to reduce local tension, improve blood flow, and normalize how that muscle activates during movement.' || E'\n\n' ||
     'It can be useful for persistent neck pain, shoulder irritation, calf tightness, and some headache patterns. The right candidate is determined after assessment, not by symptoms alone.' || E'\n\n' ||
     'Results are strongest when paired with corrective exercise and load management. Needling can reduce short-term pain, while movement retraining addresses the root mechanical factors behind recurrence.',
-    'https://images.unsplash.com/photo-1530026405186-ed1f139313f8?q=80&w=1400&auto=format&fit=crop',
+    '/media/blog/dry-needling.svg',
     'injury-rehab',
     '6a8f95f1-44b1-4e4b-9a90-89f0b1c26a11',
     true,
@@ -91,7 +91,7 @@ values
     'After demanding sessions, muscle tissue needs amino acids to rebuild. Aim for a protein source in the first few hours after activity and distribute intake across the day for better synthesis.' || E'\n\n' ||
     'Carbohydrates are equally important when training frequency is high. They replenish glycogen and support consistent output. Poor fueling can increase fatigue and delay rehabilitation progress.' || E'\n\n' ||
     'Hydration and micronutrients complete the picture. Electrolytes, iron status, and vitamin D can influence recovery quality, especially in active adults. Nutrition should match your training load and clinical goals.',
-    'https://images.unsplash.com/photo-1490645935967-10de6ba17061?q=80&w=1400&auto=format&fit=crop',
+    '/media/blog/manuelna-limfna-drenaza.svg',
     'nutrition',
     'f742eb1e-72ae-4bbd-9554-8df3f96e8c33',
     true,
@@ -105,7 +105,7 @@ values
     'The first decision after injury is to calm symptoms without shutting movement down entirely. Relative rest means reducing painful activities while keeping safe, pain-limited motion in place.' || E'\n\n' ||
     'As pain and swelling improve, graded loading begins. Exercises should challenge the injured area progressively with clear criteria for volume and intensity. This lowers re-injury risk when returning to sport.' || E'\n\n' ||
     'Use objective markers to guide progression: pain response, next-day stiffness, and movement quality. If these markers trend positively, you can push. If they worsen, adjust load and reassess technique.',
-    'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=1400&auto=format&fit=crop',
+    '/media/blog/kineziterapija.svg',
     'injury-rehab',
     '6a8f95f1-44b1-4e4b-9a90-89f0b1c26a11',
     true,
@@ -119,7 +119,7 @@ values
     'There is no single perfect posture to hold all day. The real goal is posture variability: changing positions often and avoiding prolonged static loading of the same joints and muscles.' || E'\n\n' ||
     'Start with practical desk changes. Keep your screen at eye level, feet supported, and keyboard close enough to avoid shoulder elevation. Small adjustments can reduce cumulative strain over long workdays.' || E'\n\n' ||
     'Add movement snacks every 30 to 45 minutes. Short mobility drills for thoracic extension, neck rotation, and hip opening can reset tension and maintain focus without interrupting productivity.',
-    'https://images.unsplash.com/photo-1487014679447-9f8336841d58?q=80&w=1400&auto=format&fit=crop',
+    '/media/blog/hidzama-terapija.svg',
     'exercises',
     '0f1f6fb6-2ea2-49f5-927f-01d0c8d2dd22',
     true,

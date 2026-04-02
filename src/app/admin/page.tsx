@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   Checkbox,
-  Chip,
   Container,
   Divider,
   FormControlLabel,
@@ -37,15 +36,18 @@ import {
   createDocumentAction,
   createEmployeeAction,
   createEmployeeSlotsAction,
+  createTreatmentAction,
   deleteEmployeeSlotAction,
   deleteAppointmentAction,
   deleteCertificateAction,
   deleteDocumentAction,
   deleteEmployeeAction,
+  deleteTreatmentAction,
   updateAppointmentAction,
   updateCertificateAction,
   updateDocumentAction,
   updateEmployeeAction,
+  updateTreatmentAction,
 } from "./actions";
 
 type AdminPageProps = {
@@ -54,11 +56,13 @@ type AdminPageProps = {
         notice?: string;
         error?: string;
         tab?: string;
+        appointmentsPage?: string;
       }
     | Promise<{
         notice?: string;
         error?: string;
         tab?: string;
+        appointmentsPage?: string;
       }>;
 };
 
@@ -77,6 +81,8 @@ type EmployeeRow = {
   description: string | null;
   image_path: string | null;
   specialization: string | null;
+  phone_primary: string | null;
+  phone_secondary: string | null;
   is_active: boolean;
   employee_certificates: EmployeeCertificateRow[] | null;
   appointment_slots: EmployeeSlotRow[] | null;
@@ -164,6 +170,18 @@ type BlogPostRow = {
   created_at: string | null;
 };
 
+type TreatmentRow = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  icon_path: string | null;
+  image_path: string | null;
+  blog_post_slug: string;
+  sort_order: number;
+  is_published: boolean;
+};
+
 function formatDateTime(dateTimeIso: string) {
   return new Intl.DateTimeFormat("mk-MK", {
     day: "2-digit",
@@ -181,6 +199,18 @@ function formatTimeLabel(dateTimeIso: string) {
     minute: "2-digit",
     hour12: false,
   }).format(new Date(dateTimeIso));
+}
+
+function formatStatusLabel(status: string) {
+  if (status === "confirmed") {
+    return "Потврден";
+  }
+
+  if (status === "cancelled") {
+    return "Откажан";
+  }
+
+  return "На чекање";
 }
 
 function getEmployeeNameFromRelation(relation: EmployeeRelation) {
@@ -215,30 +245,6 @@ function toDateInputValue(value: string | null) {
   return value.slice(0, 10);
 }
 
-function formatStatusLabel(status: string) {
-  if (status === "confirmed") {
-    return "Потврден";
-  }
-
-  if (status === "cancelled") {
-    return "Откажан";
-  }
-
-  return "На чекање";
-}
-
-function getStatusColor(status: string): "default" | "success" | "warning" | "error" {
-  if (status === "confirmed") {
-    return "success";
-  }
-
-  if (status === "cancelled") {
-    return "error";
-  }
-
-  return "warning";
-}
-
 function hasLinkedAppointment(relation: SlotAppointmentRelation) {
   if (!relation) {
     return false;
@@ -260,13 +266,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   const resolvedSearchParams =
     searchParams &&
-    typeof (searchParams as Promise<{ notice?: string; error?: string; tab?: string }>).then ===
+    typeof (searchParams as Promise<{ notice?: string; error?: string; tab?: string; appointmentsPage?: string }>).then ===
       "function"
-      ? await (searchParams as Promise<{ notice?: string; error?: string; tab?: string }>)
-      : (searchParams as { notice?: string; error?: string; tab?: string } | undefined);
+      ? await (searchParams as Promise<{ notice?: string; error?: string; tab?: string; appointmentsPage?: string }>)
+      : (searchParams as { notice?: string; error?: string; tab?: string; appointmentsPage?: string } | undefined);
 
   const tabParam = resolvedSearchParams?.tab ?? "appointments";
-  const activeTab = ["appointments", "staff", "documents", "blog"].includes(tabParam)
+  const activeTab = ["appointments", "staff", "documents", "blog", "treatments"].includes(tabParam)
     ? tabParam
     : "appointments";
 
@@ -278,12 +284,13 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     appointmentsResult,
     availableSlotsResult,
     blogPostsResult,
+    treatmentsResult,
   ] =
     await Promise.all([
       admin
         .from("employees")
         .select(
-          "id, name, description, image_path, specialization, is_active, employee_certificates(id, title, issuer, issued_on, file_path, sort_order), appointment_slots(id, starts_at, ends_at, is_available, appointments(id))",
+          "id, name, description, image_path, specialization, phone_primary, phone_secondary, is_active, employee_certificates(id, title, issuer, issued_on, file_path, sort_order), appointment_slots(id, starts_at, ends_at, is_available, appointments(id))",
         )
         .order("created_at", { ascending: true }),
       admin
@@ -296,7 +303,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           "id, slot_id, employee_id, client_name, email, phone, notes, status, created_at, employees(name), appointment_slots(starts_at, ends_at)",
         )
         .order("created_at", { ascending: false })
-        .limit(100),
+        .limit(1000),
       admin
         .from("appointment_slots")
         .select("id, employee_id, starts_at, ends_at")
@@ -309,6 +316,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           "id, title, slug, category, excerpt, content, cover_image, read_time_minutes, is_published, published_at, created_at",
         )
         .order("created_at", { ascending: false }),
+      admin
+        .from("treatments")
+        .select("id, title, slug, description, icon_path, image_path, blog_post_slug, sort_order, is_published")
+        .order("sort_order", { ascending: true }),
     ]);
 
   const employees = (employeesResult.data as EmployeeRow[] | null) ?? [];
@@ -316,6 +327,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const appointments = (appointmentsResult.data as AppointmentRow[] | null) ?? [];
   const availableSlots = (availableSlotsResult.data as SlotRow[] | null) ?? [];
   const blogPosts = (blogPostsResult.data as BlogPostRow[] | null) ?? [];
+  const treatments = (treatmentsResult.data as TreatmentRow[] | null) ?? [];
 
   const queryErrors = [
     employeesResult.error,
@@ -323,6 +335,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     appointmentsResult.error,
     availableSlotsResult.error,
     blogPostsResult.error,
+    treatmentsResult.error,
   ].filter(Boolean);
 
   const employeeNameById = new Map<string, string>();
@@ -337,6 +350,19 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   const todayDateInputValue = Number.isFinite(nowTimestamp)
     ? new Date(nowTimestamp).toISOString().slice(0, 10)
     : "";
+  const appointmentStatusFilter = resolvedSearchParams?.appointmentsPage?.startsWith("past:")
+    ? "past"
+    : resolvedSearchParams?.appointmentsPage?.startsWith("all:")
+      ? "all"
+      : "upcoming";
+  const currentPageFromQuery = Number.parseInt(
+    (resolvedSearchParams?.appointmentsPage ?? "upcoming:1").split(":")[1] ?? "1",
+    10,
+  );
+  const currentAppointmentsPage = Number.isFinite(currentPageFromQuery) && currentPageFromQuery > 0
+    ? currentPageFromQuery
+    : 1;
+  const appointmentsPageSize = 12;
   const upcomingAppointments: AppointmentRow[] = [];
   const pastAppointments: AppointmentRow[] = [];
 
@@ -363,89 +389,27 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
   pastAppointments.sort((first, second) => {
     return getSlotStartTimestamp(second) - getSlotStartTimestamp(first);
   });
+  const filteredAppointments =
+    appointmentStatusFilter === "past"
+      ? pastAppointments
+      : appointmentStatusFilter === "all"
+        ? [...upcomingAppointments, ...pastAppointments]
+        : upcomingAppointments;
+  const appointmentsByEmployeeId = new Map<string, AppointmentRow[]>();
 
-  const renderAppointmentCard = (appointment: AppointmentRow) => {
-    const employeeName = getEmployeeNameFromRelation(appointment.employees) ?? "Вработен";
-    const slot = getSlotFromRelation(appointment.appointment_slots);
+  for (const appointment of appointments) {
+    const existing = appointmentsByEmployeeId.get(appointment.employee_id) ?? [];
+    existing.push(appointment);
+    appointmentsByEmployeeId.set(appointment.employee_id, existing);
+  }
 
-    return (
-      <Paper key={appointment.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
-        <Stack spacing={1.2}>
-          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
-            {employeeName}
-            {slot
-              ? ` - ${formatDateTime(slot.starts_at)} - ${formatDateTime(slot.ends_at)}`
-              : " - Нема податоци за слот"}
-          </Typography>
-
-          <Box component="form" action={updateAppointmentAction}>
-            <Stack spacing={1.2}>
-              <input type="hidden" name="id" value={appointment.id} />
-
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" },
-                  gap: 1.2,
-                }}
-              >
-                <TextField
-                  name="clientName"
-                  label="Име и презиме"
-                  defaultValue={appointment.client_name}
-                  required
-                  fullWidth
-                />
-                <TextField
-                  name="email"
-                  label="Е-пошта"
-                  type="email"
-                  defaultValue={appointment.email}
-                  required
-                  fullWidth
-                />
-                <TextField name="phone" label="Телефон" defaultValue={appointment.phone ?? ""} fullWidth />
-                <TextField
-                  select
-                  name="status"
-                  label="Статус"
-                  defaultValue={appointment.status}
-                  fullWidth
-                >
-                  <MenuItem value="pending">На чекање</MenuItem>
-                  <MenuItem value="confirmed">Потврден</MenuItem>
-                  <MenuItem value="cancelled">Откажан</MenuItem>
-                </TextField>
-                <TextField
-                  name="notes"
-                  label="Забелешки"
-                  multiline
-                  minRows={2}
-                  defaultValue={appointment.notes ?? ""}
-                  fullWidth
-                  sx={{ gridColumn: { xs: "1 / -1", md: "2 / -1" } }}
-                />
-              </Box>
-
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                <Button type="submit" variant="contained" sx={{ minHeight: 44 }}>
-                  Ажурирај термин
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
-
-          <Box component="form" action={deleteAppointmentAction}>
-            <input type="hidden" name="id" value={appointment.id} />
-            <input type="hidden" name="slotId" value={appointment.slot_id} />
-            <Button type="submit" variant="outlined" color="error" sx={{ minHeight: 44 }}>
-              Избриши термин
-            </Button>
-          </Box>
-        </Stack>
-      </Paper>
-    );
-  };
+  const totalAppointmentsPages = Math.max(1, Math.ceil(filteredAppointments.length / appointmentsPageSize));
+  const safeAppointmentsPage = Math.min(currentAppointmentsPage, totalAppointmentsPages);
+  const appointmentsPageStart = (safeAppointmentsPage - 1) * appointmentsPageSize;
+  const appointmentsPageItems = filteredAppointments.slice(
+    appointmentsPageStart,
+    appointmentsPageStart + appointmentsPageSize,
+  );
 
   return (
     <Box
@@ -517,6 +481,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
             >
               <Tab component="a" href="/admin?tab=appointments" value="appointments" label="Термини" />
               <Tab component="a" href="/admin?tab=staff" value="staff" label="Вработени" />
+              <Tab component="a" href="/admin?tab=treatments" value="treatments" label="Терапии" />
               <Tab component="a" href="/admin?tab=documents" value="documents" label="Документи" />
               <Tab component="a" href="/admin?tab=blog" value="blog" label="Blog posts" />
             </Tabs>
@@ -593,42 +558,63 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <Divider />
 
               <Stack spacing={1.5}>
-                <Typography sx={{ fontSize: "0.82rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "text.secondary" }}>
-                  Претстојни термини
-                </Typography>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={1} justifyContent="space-between" alignItems={{ xs: "stretch", md: "center" }}>
+                  <Typography sx={{ fontSize: "0.82rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "text.secondary" }}>
+                    Табела со термини
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      component="a"
+                      href="/admin?tab=appointments&appointmentsPage=upcoming:1"
+                      variant={appointmentStatusFilter === "upcoming" ? "contained" : "outlined"}
+                      size="small"
+                    >
+                      Претстојни
+                    </Button>
+                    <Button
+                      component="a"
+                      href="/admin?tab=appointments&appointmentsPage=past:1"
+                      variant={appointmentStatusFilter === "past" ? "contained" : "outlined"}
+                      size="small"
+                    >
+                      Поминати
+                    </Button>
+                    <Button
+                      component="a"
+                      href="/admin?tab=appointments&appointmentsPage=all:1"
+                      variant={appointmentStatusFilter === "all" ? "contained" : "outlined"}
+                      size="small"
+                    >
+                      Сите
+                    </Button>
+                  </Stack>
+                </Stack>
 
-                {upcomingAppointments.length === 0 ? (
-                  <Typography sx={{ color: "text.secondary" }}>Нема креирани термини.</Typography>
-                ) : (
-                  upcomingAppointments.map(renderAppointmentCard)
-                )}
-
-                <Divider sx={{ my: 0.5 }} />
-
-                <Typography sx={{ fontSize: "0.82rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "text.secondary" }}>
-                  Поминати термини
-                </Typography>
-
-                {pastAppointments.length === 0 ? (
-                  <Typography sx={{ color: "text.secondary" }}>Нема поминати термини.</Typography>
-                ) : (
-                  <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
-                    <Table size="small">
-                      <TableHead>
+                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Датум и време</TableCell>
+                        <TableCell>Вработен</TableCell>
+                        <TableCell>Клиент</TableCell>
+                        <TableCell>Контакт</TableCell>
+                        <TableCell>Статус</TableCell>
+                        <TableCell align="right">Акции</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {appointmentsPageItems.length === 0 ? (
                         <TableRow>
-                          <TableCell>Датум и време</TableCell>
-                          <TableCell>Вработен</TableCell>
-                          <TableCell>Клиент</TableCell>
-                          <TableCell>Контакт</TableCell>
-                          <TableCell>Статус</TableCell>
-                          <TableCell align="right">Акции</TableCell>
+                          <TableCell colSpan={6}>
+                            <Typography sx={{ color: "text.secondary", textAlign: "center", py: 2 }}>
+                              Нема термини за избраниот филтер.
+                            </Typography>
+                          </TableCell>
                         </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {pastAppointments.map((appointment) => {
+                      ) : (
+                        appointmentsPageItems.map((appointment) => {
                           const slot = getSlotFromRelation(appointment.appointment_slots);
-                          const employeeName =
-                            getEmployeeNameFromRelation(appointment.employees) ?? "Вработен";
+                          const employeeName = getEmployeeNameFromRelation(appointment.employees) ?? "Вработен";
 
                           return (
                             <TableRow key={appointment.id} hover>
@@ -650,18 +636,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 </Stack>
                               </TableCell>
                               <TableCell>
-                                <Chip
-                                  size="small"
-                                  color={getStatusColor(appointment.status)}
-                                  label={formatStatusLabel(appointment.status)}
-                                />
+                                <Box component="form" action={updateAppointmentAction} sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                                  <input type="hidden" name="id" value={appointment.id} />
+                                  <input type="hidden" name="clientName" value={appointment.client_name} />
+                                  <input type="hidden" name="email" value={appointment.email} />
+                                  <input type="hidden" name="phone" value={appointment.phone ?? ""} />
+                                  <input type="hidden" name="notes" value={appointment.notes ?? ""} />
+                                  <TextField select name="status" size="small" defaultValue={appointment.status} sx={{ minWidth: 130 }}>
+                                    <MenuItem value="pending">На чекање</MenuItem>
+                                    <MenuItem value="confirmed">Потврден</MenuItem>
+                                    <MenuItem value="cancelled">Откажан</MenuItem>
+                                  </TextField>
+                                  <Button type="submit" variant="text" size="small">Сочувај</Button>
+                                </Box>
                               </TableCell>
-                              <TableCell align="right" sx={{ minWidth: 140 }}>
-                                <Box
-                                  component="form"
-                                  action={deleteAppointmentAction}
-                                  sx={{ display: "inline-flex" }}
-                                >
+                              <TableCell align="right" sx={{ minWidth: 120 }}>
+                                <Box component="form" action={deleteAppointmentAction} sx={{ display: "inline-flex" }}>
                                   <input type="hidden" name="id" value={appointment.id} />
                                   <input type="hidden" name="slotId" value={appointment.slot_id} />
                                   <Button type="submit" variant="outlined" color="error" size="small">
@@ -671,11 +661,40 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                               </TableCell>
                             </TableRow>
                           );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                )}
+                        })
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+
+                <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }} spacing={1}>
+                  <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
+                    Прикажани {appointmentsPageItems.length} од {filteredAppointments.length} термини
+                  </Typography>
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      component="a"
+                      href={`/admin?tab=appointments&appointmentsPage=${appointmentStatusFilter}:${Math.max(1, safeAppointmentsPage - 1)}`}
+                      variant="outlined"
+                      size="small"
+                      disabled={safeAppointmentsPage <= 1}
+                    >
+                      Претходна
+                    </Button>
+                    <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", alignSelf: "center" }}>
+                      Страна {safeAppointmentsPage} / {totalAppointmentsPages}
+                    </Typography>
+                    <Button
+                      component="a"
+                      href={`/admin?tab=appointments&appointmentsPage=${appointmentStatusFilter}:${Math.min(totalAppointmentsPages, safeAppointmentsPage + 1)}`}
+                      variant="outlined"
+                      size="small"
+                      disabled={safeAppointmentsPage >= totalAppointmentsPages}
+                    >
+                      Следна
+                    </Button>
+                  </Stack>
+                </Stack>
               </Stack>
             </Stack>
             </Paper>
@@ -701,6 +720,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <TextField name="name" label="Име и презиме" required fullWidth />
                     <TextField name="specialization" label="Специјализација" fullWidth />
                     <TextField name="imagePath" label="Патека до слика (пр. employees/ime.jpg)" fullWidth />
+                    <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                      Upload image
+                      <input hidden type="file" name="imageFile" accept="image/*" />
+                    </Button>
+                    <TextField name="phonePrimary" label="Телефон" fullWidth />
+                    <TextField name="phoneSecondary" label="Бизнис телефон" fullWidth />
                     <FormControlLabel
                       control={<Checkbox name="isActive" defaultChecked />}
                       label="Активен вработен"
@@ -739,6 +764,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     return Number.isFinite(nowTimestamp) ? endsAtTimestamp >= nowTimestamp : true;
                   });
 
+                  const employeeAppointments = (appointmentsByEmployeeId.get(employee.id) ?? [])
+                    .slice()
+                    .sort((first, second) => {
+                      return getSlotStartTimestamp(second) - getSlotStartTimestamp(first);
+                    });
+
                   return (
                     <Paper key={employee.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
                       <Stack spacing={1.5}>
@@ -764,6 +795,22 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 name="imagePath"
                                 label="Патека до слика"
                                 defaultValue={employee.image_path ?? ""}
+                                fullWidth
+                              />
+                              <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                                Upload image
+                                <input hidden type="file" name="imageFile" accept="image/*" />
+                              </Button>
+                              <TextField
+                                name="phonePrimary"
+                                label="Телефон"
+                                defaultValue={employee.phone_primary ?? ""}
+                                fullWidth
+                              />
+                              <TextField
+                                name="phoneSecondary"
+                                label="Бизнис телефон"
+                                defaultValue={employee.phone_secondary ?? ""}
                                 fullWidth
                               />
                               <FormControlLabel
@@ -815,7 +862,7 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                               <Stack spacing={1.2}>
                                 <input type="hidden" name="employeeId" value={employee.id} />
                                 <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
-                                  Додади повеќе 30-минутни слотови со еден клик.
+                                  Додади повеќе 90-минутни слотови со еден клик.
                                 </Typography>
                                 <Box
                                   sx={{
@@ -907,6 +954,56 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                           </Stack>
                         </Stack>
 
+                        <Stack spacing={1.1}>
+                          <Typography sx={{ fontWeight: 600, fontSize: "0.95rem" }}>
+                            Термини за {employee.name ?? "вработениот"}
+                          </Typography>
+
+                          {employeeAppointments.length === 0 ? (
+                            <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>
+                              Нема креирани термини за овој вработен.
+                            </Typography>
+                          ) : (
+                            <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5 }}>
+                              <Table size="small">
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>Датум</TableCell>
+                                    <TableCell>Клиент</TableCell>
+                                    <TableCell>Контакт</TableCell>
+                                    <TableCell>Статус</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {employeeAppointments.slice(0, 10).map((appointment) => {
+                                    const slot = getSlotFromRelation(appointment.appointment_slots);
+
+                                    return (
+                                      <TableRow key={appointment.id} hover>
+                                        <TableCell sx={{ minWidth: 180 }}>
+                                          {slot ? `${formatDateTime(slot.starts_at)} - ${formatTimeLabel(slot.ends_at)}` : "Нема слот"}
+                                        </TableCell>
+                                        <TableCell sx={{ minWidth: 140 }}>{appointment.client_name}</TableCell>
+                                        <TableCell sx={{ minWidth: 180 }}>
+                                          <Stack spacing={0.2}>
+                                            <Typography sx={{ fontSize: "0.8rem" }}>{appointment.email}</Typography>
+                                            {appointment.phone ? (
+                                              <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+                                                {appointment.phone}
+                                              </Typography>
+                                            ) : null}
+                                          </Stack>
+                                        </TableCell>
+                                        <TableCell sx={{ minWidth: 120 }}>{formatStatusLabel(appointment.status)}</TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            </TableContainer>
+                          )}
+                        </Stack>
+
                         <Accordion
                           disableGutters
                           elevation={0}
@@ -989,6 +1086,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                               fullWidth
                                               sx={{ gridColumn: { xs: "1 / -1", md: "1 / 3" } }}
                                             />
+                                            <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                                              Upload file
+                                              <input hidden type="file" name="fileUpload" accept=".pdf,image/*" />
+                                            </Button>
                                             <TextField
                                               name="sortOrder"
                                               label="Редослед"
@@ -1034,6 +1135,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                     <TextField name="issuer" label="Издавач" fullWidth />
                                     <TextField name="issuedOn" label="Датум" type="date" InputLabelProps={{ shrink: true }} fullWidth />
                                     <TextField name="filePath" label="Патека до фајл" fullWidth sx={{ gridColumn: { xs: "1 / -1", md: "1 / 3" } }} />
+                                    <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                                      Upload file
+                                      <input hidden type="file" name="fileUpload" accept=".pdf,image/*" />
+                                    </Button>
                                     <TextField name="sortOrder" label="Редослед" type="number" defaultValue={0} fullWidth />
                                   </Box>
                                   <Button type="submit" variant="outlined" sx={{ width: "fit-content", minHeight: 44 }}>
@@ -1050,6 +1155,106 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                 })}
               </Stack>
             </Stack>
+            </Paper>
+          ) : null}
+
+          {activeTab === "treatments" ? (
+            <Paper sx={{ p: { xs: 2.5, md: 3 }, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
+              <Stack spacing={2.2}>
+                <Typography variant="h2" sx={{ fontFamily: "var(--font-dm-serif), serif", fontSize: { xs: "1.4rem", md: "1.8rem" } }}>
+                  Терапии
+                </Typography>
+
+                <Box component="form" action={createTreatmentAction}>
+                  <Stack spacing={1.5}>
+                    <Typography sx={{ fontWeight: 600 }}>Додади нова терапија</Typography>
+                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 1.5 }}>
+                      <TextField name="title" label="Наслов" required fullWidth />
+                      <TextField name="slug" label="Slug" required fullWidth />
+                      <TextField name="blogPostSlug" label="Blog post slug" required fullWidth />
+                      <TextField name="sortOrder" label="Редослед" type="number" defaultValue={0} fullWidth />
+                      <TextField name="iconPath" label="Патека до икона" fullWidth />
+                      <TextField name="imagePath" label="Патека до слика" fullWidth />
+                      <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                        Upload icon
+                        <input hidden type="file" name="iconFile" accept="image/*" />
+                      </Button>
+                      <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                        Upload image
+                        <input hidden type="file" name="imageFile" accept="image/*" />
+                      </Button>
+                      <FormControlLabel control={<Checkbox name="isPublished" defaultChecked />} label="Објавена терапија" />
+                      <TextField
+                        name="description"
+                        label="Опис"
+                        multiline
+                        minRows={2}
+                        fullWidth
+                        sx={{ gridColumn: { xs: "1 / -1", md: "1 / -1" } }}
+                      />
+                    </Box>
+                    <Button type="submit" variant="contained" sx={{ width: "fit-content", minHeight: 44 }}>
+                      Додади терапија
+                    </Button>
+                  </Stack>
+                </Box>
+
+                <Divider />
+
+                <Stack spacing={1.5}>
+                  {treatments.length === 0 ? (
+                    <Typography sx={{ color: "text.secondary" }}>Нема терапии.</Typography>
+                  ) : (
+                    treatments.map((treatment) => (
+                      <Paper key={treatment.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                        <Stack spacing={1.2}>
+                          <Box component="form" action={updateTreatmentAction}>
+                            <Stack spacing={1.2}>
+                              <input type="hidden" name="id" value={treatment.id} />
+                              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 1.2 }}>
+                                <TextField name="title" label="Наслов" defaultValue={treatment.title} required fullWidth />
+                                <TextField name="slug" label="Slug" defaultValue={treatment.slug} required fullWidth />
+                                <TextField name="blogPostSlug" label="Blog post slug" defaultValue={treatment.blog_post_slug} required fullWidth />
+                                <TextField name="sortOrder" label="Редослед" type="number" defaultValue={treatment.sort_order} fullWidth />
+                                <TextField name="iconPath" label="Патека до икона" defaultValue={treatment.icon_path ?? ""} fullWidth />
+                                <TextField name="imagePath" label="Патека до слика" defaultValue={treatment.image_path ?? ""} fullWidth />
+                                <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                                  Upload icon
+                                  <input hidden type="file" name="iconFile" accept="image/*" />
+                                </Button>
+                                <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                                  Upload image
+                                  <input hidden type="file" name="imageFile" accept="image/*" />
+                                </Button>
+                                <FormControlLabel control={<Checkbox name="isPublished" defaultChecked={treatment.is_published} />} label="Објавена терапија" />
+                                <TextField
+                                  name="description"
+                                  label="Опис"
+                                  defaultValue={treatment.description ?? ""}
+                                  multiline
+                                  minRows={2}
+                                  fullWidth
+                                  sx={{ gridColumn: { xs: "1 / -1", md: "1 / -1" } }}
+                                />
+                              </Box>
+                              <Button type="submit" variant="contained" sx={{ width: "fit-content", minHeight: 44 }}>
+                                Ажурирај терапија
+                              </Button>
+                            </Stack>
+                          </Box>
+
+                          <Box component="form" action={deleteTreatmentAction}>
+                            <input type="hidden" name="id" value={treatment.id} />
+                            <Button type="submit" variant="outlined" color="error" sx={{ minHeight: 44 }}>
+                              Избриши терапија
+                            </Button>
+                          </Box>
+                        </Stack>
+                      </Paper>
+                    ))
+                  )}
+                </Stack>
+              </Stack>
             </Paper>
           ) : null}
 
@@ -1073,6 +1278,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     <TextField name="title" label="Наслов" required fullWidth />
                     <TextField name="docType" label="Тип (certificate, policy, license...)" fullWidth />
                     <TextField name="filePath" label="Патека до фајл или URL" fullWidth />
+                    <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                      Upload file
+                      <input hidden type="file" name="fileUpload" accept=".pdf,image/*" />
+                    </Button>
                     <TextField name="sortOrder" label="Редослед" type="number" defaultValue={0} fullWidth />
                     <FormControlLabel
                       control={<Checkbox name="isPublished" defaultChecked />}
@@ -1115,6 +1324,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                               <TextField name="title" label="Наслов" defaultValue={document.title ?? ""} required fullWidth />
                               <TextField name="docType" label="Тип" defaultValue={document.doc_type ?? ""} fullWidth />
                               <TextField name="filePath" label="Патека до фајл или URL" defaultValue={document.file_path ?? ""} fullWidth />
+                              <Button component="label" variant="outlined" sx={{ minHeight: 50, justifyContent: "flex-start" }}>
+                                Upload file
+                                <input hidden type="file" name="fileUpload" accept=".pdf,image/*" />
+                              </Button>
                               <TextField name="sortOrder" label="Редослед" type="number" defaultValue={document.sort_order} fullWidth />
                               <FormControlLabel
                                 control={<Checkbox name="isPublished" defaultChecked={document.is_published} />}

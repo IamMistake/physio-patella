@@ -1,6 +1,7 @@
 "use client";
 
 import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
+import FacebookRoundedIcon from "@mui/icons-material/FacebookRounded";
 import InstagramIcon from "@mui/icons-material/Instagram";
 import LocationOnRoundedIcon from "@mui/icons-material/LocationOnRounded";
 import PhoneRoundedIcon from "@mui/icons-material/PhoneRounded";
@@ -55,7 +56,7 @@ export default function Footer() {
               Physio Patella
             </Typography>
             <Typography sx={{ fontSize: "0.8125rem", color: subtleText }}>
-              Стручна физиотерапија и хиропрактика
+              Стручна физиотерапија и киропрактика
             </Typography>
             <Stack direction="row" spacing={1} sx={{ mt: 0.5 }}>
               <IconButton
@@ -74,6 +75,23 @@ export default function Footer() {
                 }}
               >
                 <InstagramIcon />
+              </IconButton>
+              <IconButton
+                component="a"
+                href="https://www.facebook.com/p/Physio-Patella-%D0%A4%D0%B8%D0%B7%D0%B8%D0%BE-%D0%9F%D0%B0%D1%82%D0%B5%D0%BB%D0%B0-61581403655284/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook профил на Physio Patella"
+                sx={{
+                  color: "rgba(255,255,255,0.7)",
+                  minWidth: 44,
+                  minHeight: 44,
+                  "&:hover": {
+                    color: "#ffffff",
+                  },
+                }}
+              >
+                <FacebookRoundedIcon />
               </IconButton>
             </Stack>
           </Stack>
@@ -151,7 +169,7 @@ export default function Footer() {
             <Stack direction="row" spacing={1} alignItems="center">
               <EmailRoundedIcon sx={{ fontSize: 14, color: subtleText }} />
               <MuiLink
-                href="mailto:antonio_gurcinoski@hotmail.com"
+                href="mailto:physiopatella.therapy@gmail.com"
                 underline="none"
                 sx={{
                   fontSize: "0.8125rem",
@@ -161,7 +179,7 @@ export default function Footer() {
                   },
                 }}
               >
-                antonio_gurcinoski@hotmail.com
+                physiopatella.therapy@gmail.com
               </MuiLink>
             </Stack>
           </Stack>

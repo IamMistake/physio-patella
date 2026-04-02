@@ -9,7 +9,7 @@ import JourneySection from "@/components/sections/journey-section";
 import ReviewsSection from "@/components/sections/reviews-section";
 import type { BlogCardPost } from "@/components/blog/blog-post-card";
 import { createClient } from "@/lib/supabase/server";
-import type { AppointmentSlot, Employee, Review, StudioDocument } from "@/types/physio";
+import type { AppointmentSlot, Employee, Review, StudioDocument, Treatment } from "@/types/physio";
 
 type EmployeeCertificateRow = {
   title: string | null;
@@ -22,6 +22,8 @@ type EmployeeRow = {
   description: string | null;
   image_path: string | null;
   specialization: string | null;
+  phone_primary: string | null;
+  phone_secondary: string | null;
   employee_certificates: EmployeeCertificateRow[] | null;
 };
 
@@ -64,6 +66,21 @@ type BlogPostRow = {
     | null;
 };
 
+type SiteMetricRow = {
+  value: number;
+};
+
+type TreatmentRow = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  icon_path: string | null;
+  image_path: string | null;
+  blog_post_slug: string;
+  sort_order: number;
+};
+
 function getAuthorName(
   author:
     | {
@@ -88,11 +105,11 @@ function getAuthorName(
 async function getPageData() {
   const supabase = await createClient();
 
-  const [employeesResult, reviewsResult, documentsResult, slotsResult, latestPostsResult] = await Promise.all([
+  const [employeesResult, reviewsResult, documentsResult, slotsResult, latestPostsResult, siteMetricResult, treatmentsResult] = await Promise.all([
     supabase
       .from("employees")
       .select(
-        "id, name, description, image_path, specialization, employee_certificates(title, issuer)",
+        "id, name, description, image_path, specialization, phone_primary, phone_secondary, employee_certificates(title, issuer)",
       )
       .eq("is_active", true)
       .order("created_at", { ascending: true }),
@@ -119,6 +136,16 @@ async function getPageData() {
       .eq("is_published", true)
       .order("published_at", { ascending: false })
       .limit(3),
+    supabase
+      .from("site_metrics")
+      .select("value")
+      .eq("key", "patients_total")
+      .maybeSingle(),
+    supabase
+      .from("treatments")
+      .select("id, title, slug, description, icon_path, image_path, blog_post_slug, sort_order")
+      .eq("is_published", true)
+      .order("sort_order", { ascending: true }),
   ]);
 
   const employees: Employee[] = ((employeesResult.data as EmployeeRow[] | null) ?? []).map(
@@ -128,6 +155,8 @@ async function getPageData() {
       description: employee.description,
       image_path: employee.image_path,
       specialization: employee.specialization,
+      phone_primary: employee.phone_primary,
+      phone_secondary: employee.phone_secondary,
       certificates: (employee.employee_certificates ?? []).map((certificate, index) => ({
         id: `${employee.id}-cert-${index}`,
         title: certificate.title,
@@ -174,23 +203,41 @@ async function getPageData() {
       authorName: getAuthorName(post.author),
     }));
 
+  const treatments: Treatment[] = ((treatmentsResult.data as TreatmentRow[] | null) ?? []).map((treatment) => ({
+    id: treatment.id,
+    title: treatment.title,
+    slug: treatment.slug,
+    description: treatment.description,
+    icon_path: treatment.icon_path,
+    image_path: treatment.image_path,
+    blog_post_slug: treatment.blog_post_slug,
+    sort_order: treatment.sort_order,
+  }));
+
+  const metricValue = (siteMetricResult.data as SiteMetricRow | null)?.value;
+  const patientsTotal = typeof metricValue === "number" && Number.isFinite(metricValue)
+    ? Math.max(metricValue, 1200)
+    : 1200;
+
   return {
     employees,
     reviews,
     documents,
     slots,
     latestPosts,
+    patientsTotal,
+    treatments,
   };
 }
 
 export default async function Home() {
-  const { employees, reviews, documents, slots, latestPosts } = await getPageData();
+  const { employees, reviews, documents, slots, latestPosts, patientsTotal, treatments } = await getPageData();
 
   return (
     <Box component="div">
-      <HeroSection />
+      <HeroSection patientsTotal={patientsTotal} />
       <Box id="therapies" sx={{ scrollMarginTop: { xs: "56px", md: "64px" } }} />
-      <ConditionsSection />
+      <ConditionsSection treatments={treatments} />
       <JourneySection />
       <EmployeesSection employees={employees} />
       <Box id="blog" sx={{ scrollMarginTop: { xs: "56px", md: "64px" } }} />

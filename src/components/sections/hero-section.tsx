@@ -2,13 +2,21 @@ import Image from "next/image";
 import { Box, Button, Container, Stack, Typography } from "@mui/material";
 import SectionOverline from "@/components/ui/section-overline";
 
-const trustStats = [
-  { value: "12+", label: "години искуство" },
-  { value: "1,200+", label: "пациенти" },
-  { value: "5 ѕвезди", label: "оценка" },
-];
+type HeroSectionProps = {
+  patientsTotal: number;
+};
 
-export default function HeroSection() {
+function formatPatientsTotal(total: number) {
+  return `${new Intl.NumberFormat("en-US").format(total)}+`;
+}
+
+export default function HeroSection({ patientsTotal }: HeroSectionProps) {
+  const trustStats = [
+    { value: "7", label: "години искуство" },
+    { value: formatPatientsTotal(patientsTotal), label: "пациенти" },
+    { value: "5 ѕвезди", label: "оценка" },
+  ];
+
   return (
     <Box
       id="home"
@@ -58,7 +66,7 @@ export default function HeroSection() {
         <Box sx={{ width: { xs: "100%", md: "60%" } }}>
           <Stack spacing={3}>
             <SectionOverline withLeadingLine letterSpacing="0.18em">
-              Физиотерапија и хиропрактика
+              Физиотерапија и киропрактика
             </SectionOverline>
 
             <Typography
@@ -83,7 +91,7 @@ export default function HeroSection() {
                 maxWidth: 520,
               }}
             >
-              Стручна физиотерапија и хиропрактика прилагодена на твоето тело. Закажи
+              Стручна физиотерапија и киропрактика прилагодена на твоето тело. Закажи
               термин со нашиот тим уште денес.
             </Typography>
 

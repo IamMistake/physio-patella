@@ -31,6 +31,61 @@ function getCheckbox(formData: FormData, key: string) {
   return formData.get(key) === "on";
 }
 
+function getFile(formData: FormData, key: string) {
+  const value = formData.get(key);
+
+  if (!(value instanceof File) || value.size === 0) {
+    return null;
+  }
+
+  return value;
+}
+
+function sanitizeFileName(fileName: string) {
+  const normalized = fileName
+    .normalize("NFKD")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .toLowerCase();
+
+  return normalized || "file";
+}
+
+async function uploadPublicFile({
+  formData,
+  key,
+  bucket,
+  folder,
+}: {
+  formData: FormData;
+  key: string;
+  bucket: string;
+  folder: string;
+}) {
+  const file = getFile(formData, key);
+
+  if (!file) {
+    return null;
+  }
+
+  const admin = createAdminClient();
+  const filePath = `${folder}/${Date.now()}-${crypto.randomUUID()}-${sanitizeFileName(file.name)}`;
+  const fileBuffer = await file.arrayBuffer();
+
+  const { error } = await admin.storage.from(bucket).upload(filePath, fileBuffer, {
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const { data } = admin.storage.from(bucket).getPublicUrl(filePath);
+  return data.publicUrl;
+}
+
 function buildAdminRedirectPath({
   tab,
   notice,
@@ -186,13 +241,29 @@ export async function createEmployeeAction(formData: FormData) {
     redirectWithError("Името на вработениот е задолжително.", "staff");
   }
 
+  let uploadedImagePath: string | null = null;
+
+  try {
+    uploadedImagePath = await uploadPublicFile({
+      formData,
+      key: "imageFile",
+      bucket: "employee-media",
+      folder: "employees",
+    });
+  } catch (uploadError) {
+    console.error("Failed to upload employee image:", uploadError);
+    redirectWithError("Не успеавме да ја качиме сликата за вработениот.", "staff");
+  }
+
   const admin = createAdminClient();
 
   const { error } = await admin.from("employees").insert({
     name,
     specialization: getOptionalString(formData, "specialization"),
     description: getOptionalString(formData, "description"),
-    image_path: getOptionalString(formData, "imagePath"),
+    image_path: uploadedImagePath ?? getOptionalString(formData, "imagePath"),
+    phone_primary: getOptionalString(formData, "phonePrimary"),
+    phone_secondary: getOptionalString(formData, "phoneSecondary"),
     is_active: getCheckbox(formData, "isActive"),
   });
 
@@ -215,6 +286,20 @@ export async function updateEmployeeAction(formData: FormData) {
     redirectWithError("Недостасуваат податоци за ажурирање на вработен.", "staff");
   }
 
+  let uploadedImagePath: string | null = null;
+
+  try {
+    uploadedImagePath = await uploadPublicFile({
+      formData,
+      key: "imageFile",
+      bucket: "employee-media",
+      folder: "employees",
+    });
+  } catch (uploadError) {
+    console.error("Failed to upload employee image:", uploadError);
+    redirectWithError("Не успеавме да ја качиме сликата за вработениот.", "staff");
+  }
+
   const admin = createAdminClient();
 
   const { error } = await admin
@@ -223,7 +308,9 @@ export async function updateEmployeeAction(formData: FormData) {
       name,
       specialization: getOptionalString(formData, "specialization"),
       description: getOptionalString(formData, "description"),
-      image_path: getOptionalString(formData, "imagePath"),
+      image_path: uploadedImagePath ?? getOptionalString(formData, "imagePath"),
+      phone_primary: getOptionalString(formData, "phonePrimary"),
+      phone_secondary: getOptionalString(formData, "phoneSecondary"),
       is_active: getCheckbox(formData, "isActive"),
     })
     .eq("id", id);
@@ -293,6 +380,20 @@ export async function createCertificateAction(formData: FormData) {
     redirectWithError("Вработен и наслов на сертификат се задолжителни.", "staff");
   }
 
+  let uploadedFilePath: string | null = null;
+
+  try {
+    uploadedFilePath = await uploadPublicFile({
+      formData,
+      key: "fileUpload",
+      bucket: "documents",
+      folder: "certificates",
+    });
+  } catch (uploadError) {
+    console.error("Failed to upload certificate file:", uploadError);
+    redirectWithError("Не успеавме да го качиме фајлот за сертификат.", "staff");
+  }
+
   const admin = createAdminClient();
 
   const { error } = await admin.from("employee_certificates").insert({
@@ -300,7 +401,7 @@ export async function createCertificateAction(formData: FormData) {
     title,
     issuer: getOptionalString(formData, "issuer"),
     issued_on: getOptionalString(formData, "issuedOn"),
-    file_path: getOptionalString(formData, "filePath"),
+    file_path: uploadedFilePath ?? getOptionalString(formData, "filePath"),
     sort_order: getInt(formData, "sortOrder", 0),
   });
 
@@ -323,6 +424,20 @@ export async function updateCertificateAction(formData: FormData) {
     redirectWithError("Недостасуваат податоци за ажурирање на сертификат.", "staff");
   }
 
+  let uploadedFilePath: string | null = null;
+
+  try {
+    uploadedFilePath = await uploadPublicFile({
+      formData,
+      key: "fileUpload",
+      bucket: "documents",
+      folder: "certificates",
+    });
+  } catch (uploadError) {
+    console.error("Failed to upload certificate file:", uploadError);
+    redirectWithError("Не успеавме да го качиме фајлот за сертификат.", "staff");
+  }
+
   const admin = createAdminClient();
 
   const { error } = await admin
@@ -331,7 +446,7 @@ export async function updateCertificateAction(formData: FormData) {
       title,
       issuer: getOptionalString(formData, "issuer"),
       issued_on: getOptionalString(formData, "issuedOn"),
-      file_path: getOptionalString(formData, "filePath"),
+      file_path: uploadedFilePath ?? getOptionalString(formData, "filePath"),
       sort_order: getInt(formData, "sortOrder", 0),
     })
     .eq("id", id);
@@ -375,13 +490,27 @@ export async function createDocumentAction(formData: FormData) {
     redirectWithError("Насловот на документот е задолжителен.", "documents");
   }
 
+  let uploadedFilePath: string | null = null;
+
+  try {
+    uploadedFilePath = await uploadPublicFile({
+      formData,
+      key: "fileUpload",
+      bucket: "documents",
+      folder: "documents",
+    });
+  } catch (uploadError) {
+    console.error("Failed to upload document file:", uploadError);
+    redirectWithError("Не успеавме да го качиме документот.", "documents");
+  }
+
   const admin = createAdminClient();
 
   const { error } = await admin.from("documents").insert({
     title,
     description: getOptionalString(formData, "description"),
     doc_type: getOptionalString(formData, "docType"),
-    file_path: getOptionalString(formData, "filePath"),
+    file_path: uploadedFilePath ?? getOptionalString(formData, "filePath"),
     sort_order: getInt(formData, "sortOrder", 0),
     is_published: getCheckbox(formData, "isPublished"),
   });
@@ -405,6 +534,20 @@ export async function updateDocumentAction(formData: FormData) {
     redirectWithError("Недостасуваат податоци за ажурирање на документ.", "documents");
   }
 
+  let uploadedFilePath: string | null = null;
+
+  try {
+    uploadedFilePath = await uploadPublicFile({
+      formData,
+      key: "fileUpload",
+      bucket: "documents",
+      folder: "documents",
+    });
+  } catch (uploadError) {
+    console.error("Failed to upload document file:", uploadError);
+    redirectWithError("Не успеавме да го качиме документот.", "documents");
+  }
+
   const admin = createAdminClient();
 
   const { error } = await admin
@@ -413,7 +556,7 @@ export async function updateDocumentAction(formData: FormData) {
       title,
       description: getOptionalString(formData, "description"),
       doc_type: getOptionalString(formData, "docType"),
-      file_path: getOptionalString(formData, "filePath"),
+      file_path: uploadedFilePath ?? getOptionalString(formData, "filePath"),
       sort_order: getInt(formData, "sortOrder", 0),
       is_published: getCheckbox(formData, "isPublished"),
     })
@@ -447,6 +590,139 @@ export async function deleteDocumentAction(formData: FormData) {
 
   revalidateAdminData();
   redirectWithNotice("Документот е избришан.", "documents");
+}
+
+export async function createTreatmentAction(formData: FormData) {
+  await requireAdminSession();
+
+  const title = getString(formData, "title");
+  const providedSlug = getString(formData, "slug");
+  const slug = providedSlug || slugify(title);
+  const blogPostSlug = getString(formData, "blogPostSlug");
+
+  if (!title || !slug || !blogPostSlug) {
+    redirectWithError("Наслов, slug и blog slug се задолжителни.", "treatments");
+  }
+
+  let uploadedIconPath: string | null = null;
+  let uploadedImagePath: string | null = null;
+
+  try {
+    uploadedIconPath = await uploadPublicFile({
+      formData,
+      key: "iconFile",
+      bucket: "treatment-media",
+      folder: "icons",
+    });
+    uploadedImagePath = await uploadPublicFile({
+      formData,
+      key: "imageFile",
+      bucket: "treatment-media",
+      folder: "images",
+    });
+  } catch (uploadError) {
+    console.error("Failed to upload treatment files:", uploadError);
+    redirectWithError("Не успеавме да ги качиме фајловите за терапијата.", "treatments");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("treatments").insert({
+    title,
+    slug,
+    description: getOptionalString(formData, "description"),
+    icon_path: uploadedIconPath ?? getOptionalString(formData, "iconPath"),
+    image_path: uploadedImagePath ?? getOptionalString(formData, "imagePath"),
+    blog_post_slug: blogPostSlug,
+    sort_order: getInt(formData, "sortOrder", 0),
+    is_published: getCheckbox(formData, "isPublished"),
+  });
+
+  if (error) {
+    console.error("Failed to create treatment:", error);
+    redirectWithError("Не успеавме да додадеме терапија.", "treatments");
+  }
+
+  revalidateAdminData();
+  redirectWithNotice("Терапијата е додадена.", "treatments");
+}
+
+export async function updateTreatmentAction(formData: FormData) {
+  await requireAdminSession();
+
+  const id = getString(formData, "id");
+  const title = getString(formData, "title");
+  const providedSlug = getString(formData, "slug");
+  const slug = providedSlug || slugify(title);
+  const blogPostSlug = getString(formData, "blogPostSlug");
+
+  if (!id || !title || !slug || !blogPostSlug) {
+    redirectWithError("Недостасуваат податоци за ажурирање терапија.", "treatments");
+  }
+
+  let uploadedIconPath: string | null = null;
+  let uploadedImagePath: string | null = null;
+
+  try {
+    uploadedIconPath = await uploadPublicFile({
+      formData,
+      key: "iconFile",
+      bucket: "treatment-media",
+      folder: "icons",
+    });
+    uploadedImagePath = await uploadPublicFile({
+      formData,
+      key: "imageFile",
+      bucket: "treatment-media",
+      folder: "images",
+    });
+  } catch (uploadError) {
+    console.error("Failed to upload treatment files:", uploadError);
+    redirectWithError("Не успеавме да ги качиме фајловите за терапијата.", "treatments");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin
+    .from("treatments")
+    .update({
+      title,
+      slug,
+      description: getOptionalString(formData, "description"),
+      icon_path: uploadedIconPath ?? getOptionalString(formData, "iconPath"),
+      image_path: uploadedImagePath ?? getOptionalString(formData, "imagePath"),
+      blog_post_slug: blogPostSlug,
+      sort_order: getInt(formData, "sortOrder", 0),
+      is_published: getCheckbox(formData, "isPublished"),
+    })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Failed to update treatment:", error);
+    redirectWithError("Не успеавме да ја ажурираме терапијата.", "treatments");
+  }
+
+  revalidateAdminData();
+  redirectWithNotice("Терапијата е ажурирана.", "treatments");
+}
+
+export async function deleteTreatmentAction(formData: FormData) {
+  await requireAdminSession();
+
+  const id = getString(formData, "id");
+
+  if (!id) {
+    redirectWithError("Недостасува ID за бришење терапија.", "treatments");
+  }
+
+  const admin = createAdminClient();
+  const { error } = await admin.from("treatments").delete().eq("id", id);
+
+  if (error) {
+    console.error("Failed to delete treatment:", error);
+    redirectWithError("Не успеавме да ја избришеме терапијата.", "treatments");
+  }
+
+  revalidateAdminData();
+  redirectWithNotice("Терапијата е избришана.", "treatments");
 }
 
 export async function createAppointmentAction(formData: FormData) {
@@ -593,7 +869,7 @@ export async function createEmployeeSlotsAction(formData: FormData) {
     startMinutes % 30 !== 0 ||
     endMinutes % 30 !== 0
   ) {
-    redirectWithError("Почетното и крајното време мора да се на 30 минути (пример 10:00, 10:30).", "staff");
+    redirectWithError("Почетното и крајното време мора да се на 30 минути (пример 10:00, 10:30). Секој слот е 90 минути.", "staff");
   }
 
   if (!startIso || !endIso) {
@@ -642,7 +918,7 @@ export async function createEmployeeSlotsAction(formData: FormData) {
       break;
     }
 
-    const nextIso = addMinutesToIso(cursorIso, 30);
+    const nextIso = addMinutesToIso(cursorIso, 90);
 
     if (!nextIso) {
       break;
