@@ -6,6 +6,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
   Container,
   Divider,
   FormControlLabel,
@@ -57,12 +58,16 @@ type AdminPageProps = {
         error?: string;
         tab?: string;
         appointmentsPage?: string;
+        staffDate?: string;
+        staffEmployeeId?: string;
       }
     | Promise<{
         notice?: string;
         error?: string;
         tab?: string;
         appointmentsPage?: string;
+        staffDate?: string;
+        staffEmployeeId?: string;
       }>;
 };
 
@@ -201,6 +206,19 @@ function formatTimeLabel(dateTimeIso: string) {
   }).format(new Date(dateTimeIso));
 }
 
+function toDateKey(dateTimeIso: string) {
+  return new Date(dateTimeIso).toISOString().slice(0, 10);
+}
+
+function formatDayLabel(dateKey: string) {
+  return new Intl.DateTimeFormat("mk-MK", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(`${dateKey}T00:00:00`));
+}
+
 function formatStatusLabel(status: string) {
   if (status === "confirmed") {
     return "Потврден";
@@ -266,10 +284,10 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   const resolvedSearchParams =
     searchParams &&
-    typeof (searchParams as Promise<{ notice?: string; error?: string; tab?: string; appointmentsPage?: string }>).then ===
+    typeof (searchParams as Promise<{ notice?: string; error?: string; tab?: string; appointmentsPage?: string; staffDate?: string; staffEmployeeId?: string }>).then ===
       "function"
-      ? await (searchParams as Promise<{ notice?: string; error?: string; tab?: string; appointmentsPage?: string }>)
-      : (searchParams as { notice?: string; error?: string; tab?: string; appointmentsPage?: string } | undefined);
+      ? await (searchParams as Promise<{ notice?: string; error?: string; tab?: string; appointmentsPage?: string; staffDate?: string; staffEmployeeId?: string }>)
+      : (searchParams as { notice?: string; error?: string; tab?: string; appointmentsPage?: string; staffDate?: string; staffEmployeeId?: string } | undefined);
 
   const tabParam = resolvedSearchParams?.tab ?? "appointments";
   const activeTab = ["appointments", "staff", "documents", "blog", "treatments"].includes(tabParam)
@@ -764,6 +782,27 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                     return Number.isFinite(nowTimestamp) ? endsAtTimestamp >= nowTimestamp : true;
                   });
 
+                  const slotsByDate = upcomingEmployeeSlots.reduce<Record<string, EmployeeSlotRow[]>>((accumulator, slot) => {
+                    const dateKey = toDateKey(slot.starts_at);
+
+                    if (!accumulator[dateKey]) {
+                      accumulator[dateKey] = [];
+                    }
+
+                    accumulator[dateKey].push(slot);
+                    return accumulator;
+                  }, {});
+
+                  const availableDateKeys = Object.keys(slotsByDate).sort();
+                  const selectedDateFromQuery =
+                    resolvedSearchParams?.staffEmployeeId === employee.id ? resolvedSearchParams?.staffDate ?? "all" : "all";
+                  const activeDateFilter =
+                    selectedDateFromQuery !== "all" && availableDateKeys.includes(selectedDateFromQuery)
+                      ? selectedDateFromQuery
+                      : "all";
+                  const filteredSlots =
+                    activeDateFilter === "all" ? upcomingEmployeeSlots : (slotsByDate[activeDateFilter] ?? []);
+
                   const employeeAppointments = (appointmentsByEmployeeId.get(employee.id) ?? [])
                     .slice()
                     .sort((first, second) => {
@@ -914,42 +953,88 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
                                 Нема идни слотови.
                               </Typography>
                             ) : (
-                              upcomingEmployeeSlots.map((slot) => {
-                                const isBooked = hasLinkedAppointment(slot.appointments) || !slot.is_available;
+                              <Stack spacing={1.1}>
+                                <Stack direction="row" spacing={0.7} sx={{ overflowX: "auto", pb: 0.3 }}>
+                                  <Chip
+                                    component="a"
+                                    clickable
+                                    href={`/admin?tab=staff&staffEmployeeId=${employee.id}&staffDate=all`}
+                                    label={`Сите денови (${upcomingEmployeeSlots.length})`}
+                                    color={activeDateFilter === "all" ? "primary" : "default"}
+                                    variant={activeDateFilter === "all" ? "filled" : "outlined"}
+                                    sx={{ borderRadius: 1.2 }}
+                                  />
+                                  {availableDateKeys.map((dateKey) => (
+                                    <Chip
+                                      key={dateKey}
+                                      component="a"
+                                      clickable
+                                      href={`/admin?tab=staff&staffEmployeeId=${employee.id}&staffDate=${dateKey}`}
+                                      label={`${formatDayLabel(dateKey)} (${slotsByDate[dateKey]?.length ?? 0})`}
+                                      color={activeDateFilter === dateKey ? "primary" : "default"}
+                                      variant={activeDateFilter === dateKey ? "filled" : "outlined"}
+                                      sx={{ borderRadius: 1.2 }}
+                                    />
+                                  ))}
+                                </Stack>
 
-                                return (
-                                  <Paper key={slot.id} variant="outlined" sx={{ p: 1.2, borderRadius: 1.2 }}>
-                                    <Stack
-                                      direction={{ xs: "column", sm: "row" }}
-                                      spacing={1}
-                                      alignItems={{ xs: "flex-start", sm: "center" }}
-                                      justifyContent="space-between"
-                                    >
-                                      <Stack spacing={0.35}>
-                                        <Typography sx={{ fontSize: "0.88rem", fontWeight: 600 }}>
-                                          {formatDateTime(slot.starts_at)} - {formatDateTime(slot.ends_at)}
-                                        </Typography>
-                                        <Typography sx={{ fontSize: "0.76rem", color: isBooked ? "warning.main" : "success.main" }}>
-                                          {isBooked ? "Резервиран термин" : "Слободен термин"}
-                                        </Typography>
-                                      </Stack>
+                                <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 1.5 }}>
+                                  <Table size="small">
+                                    <TableHead>
+                                      <TableRow>
+                                        <TableCell>Ден</TableCell>
+                                        <TableCell>Од</TableCell>
+                                        <TableCell>До</TableCell>
+                                        <TableCell>Статус</TableCell>
+                                        <TableCell align="right">Акции</TableCell>
+                                      </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                      {filteredSlots.length === 0 ? (
+                                        <TableRow>
+                                          <TableCell colSpan={5}>
+                                            <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", textAlign: "center", py: 1.5 }}>
+                                              Нема слотови за избраниот ден.
+                                            </Typography>
+                                          </TableCell>
+                                        </TableRow>
+                                      ) : (
+                                        filteredSlots.map((slot) => {
+                                          const isBooked = hasLinkedAppointment(slot.appointments) || !slot.is_available;
 
-                                      <Box component="form" action={deleteEmployeeSlotAction}>
-                                        <input type="hidden" name="slotId" value={slot.id} />
-                                        <Button
-                                          type="submit"
-                                          variant="outlined"
-                                          color="error"
-                                          disabled={isBooked}
-                                          sx={{ minHeight: 40 }}
-                                        >
-                                          Избриши слот
-                                        </Button>
-                                      </Box>
-                                    </Stack>
-                                  </Paper>
-                                );
-                              })
+                                          return (
+                                            <TableRow key={slot.id} hover>
+                                              <TableCell sx={{ minWidth: 145 }}>{formatDayLabel(toDateKey(slot.starts_at))}</TableCell>
+                                              <TableCell sx={{ minWidth: 80 }}>{formatTimeLabel(slot.starts_at)}</TableCell>
+                                              <TableCell sx={{ minWidth: 80 }}>{formatTimeLabel(slot.ends_at)}</TableCell>
+                                              <TableCell sx={{ minWidth: 150 }}>
+                                                <Typography sx={{ fontSize: "0.78rem", color: isBooked ? "warning.main" : "success.main", fontWeight: 600 }}>
+                                                  {isBooked ? "Резервиран термин" : "Слободен термин"}
+                                                </Typography>
+                                              </TableCell>
+                                              <TableCell align="right" sx={{ minWidth: 130 }}>
+                                                <Box component="form" action={deleteEmployeeSlotAction} sx={{ display: "inline-flex" }}>
+                                                  <input type="hidden" name="slotId" value={slot.id} />
+                                                  <Button
+                                                    type="submit"
+                                                    variant="outlined"
+                                                    color="error"
+                                                    disabled={isBooked}
+                                                    size="small"
+                                                    sx={{ minHeight: 36 }}
+                                                  >
+                                                    Избриши слот
+                                                  </Button>
+                                                </Box>
+                                              </TableCell>
+                                            </TableRow>
+                                          );
+                                        })
+                                      )}
+                                    </TableBody>
+                                  </Table>
+                                </TableContainer>
+                              </Stack>
                             )}
                           </Stack>
                         </Stack>
