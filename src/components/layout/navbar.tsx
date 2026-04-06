@@ -149,6 +149,7 @@ export default function Navbar() {
                 <Typography
                   sx={{
                     fontFamily: "var(--font-dm-serif), serif",
+                    display: { xs: "none", sm: "block" },
                     color: "primary.main",
                     textDecoration: "none",
                     fontSize: { xs: "1.2rem", md: "1.25rem" },

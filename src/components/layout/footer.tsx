@@ -166,7 +166,7 @@ export default function Footer() {
               </Typography>
             </Stack>
 
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="flex-start" sx={{ flexWrap: "wrap" }}>
               <EmailRoundedIcon sx={{ fontSize: 14, color: subtleText }} />
               <MuiLink
                 href="mailto:physiopatella.therapy@gmail.com"
@@ -174,6 +174,8 @@ export default function Footer() {
                 sx={{
                   fontSize: "0.8125rem",
                   color: mutedText,
+                  minWidth: 0,
+                  overflowWrap: "anywhere",
                   "&:hover": {
                     color: "#ffffff",
                   },

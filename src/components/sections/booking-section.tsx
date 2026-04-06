@@ -548,6 +548,9 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                                 position: "relative",
                                 borderRadius: 1.5,
                                 p: 2.5,
+                                width: "100%",
+                                maxWidth: { xs: 360, sm: "none" },
+                                mx: "auto",
                                 border: "1px solid",
                                 borderColor: isSelected ? "primary.main" : "divider",
                                 bgcolor: isSelected ? "action.hover" : "background.paper",
@@ -559,15 +562,15 @@ export default function BookingSection({ employees, slots }: BookingSectionProps
                                 },
                               }}
                             >
-                              <Stack direction="row" spacing={1.4} alignItems="center">
+                              <Stack direction="row" spacing={1.4} alignItems="center" sx={{ minWidth: 0 }}>
                                 <Avatar sx={{ width: 48, height: 48, bgcolor: "primary.main" }}>
                                   {getInitials(employee.name)}
                                 </Avatar>
-                                <Stack spacing={0.4}>
+                                <Stack spacing={0.4} sx={{ minWidth: 0 }}>
                                   <Typography sx={{ fontWeight: 700, fontSize: "1rem" }}>
                                     {employee.name ?? "Специјалист"}
                                   </Typography>
-                                  <Typography sx={{ color: "text.secondary", fontSize: "0.82rem" }}>
+                                  <Typography sx={{ color: "text.secondary", fontSize: "0.82rem", overflowWrap: "anywhere" }}>
                                     {employee.specialization ?? "Физиотерапија"}
                                   </Typography>
                                 </Stack>

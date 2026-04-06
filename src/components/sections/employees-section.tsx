@@ -96,13 +96,16 @@ export default function EmployeesSection({ employees }: EmployeesSectionProps) {
                 <Paper
                   key={employee.id}
                   sx={{
-                    p: { xs: 2.5, md: 3 },
+                    p: { xs: 2.25, md: 3 },
                     borderRadius: "20px",
                     border: "1px solid",
                     borderColor: "divider",
                     bgcolor: "background.paper",
                     display: "flex",
                     flexDirection: "column",
+                    width: "100%",
+                    maxWidth: { xs: 360, sm: "none" },
+                    mx: "auto",
                     minHeight: { md: "320px" },
                     boxShadow: "none",
                     transition: "transform 0.3s ease, box-shadow 0.3s ease",

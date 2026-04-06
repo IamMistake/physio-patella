@@ -17,7 +17,12 @@ export default function BlogPreviewSection({ posts }: BlogPreviewSectionProps) {
     <Box component="section" aria-labelledby="blog-preview-heading" sx={{ py: { xs: 6, md: 10 }, bgcolor: "background.default" }}>
       <Container maxWidth="lg" sx={{ px: { xs: 2, sm: 3, md: 4 } }}>
         <Stack spacing={4}>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-end" spacing={2}>
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", sm: "flex-end" }}
+            spacing={2}
+          >
             <Stack spacing={1.3}>
               <SectionOverline>Од блогот</SectionOverline>
               <Typography
@@ -35,7 +40,7 @@ export default function BlogPreviewSection({ posts }: BlogPreviewSectionProps) {
                   fontSize: "0.85rem",
                   color: "primary.main",
                   textDecoration: "none",
-                  whiteSpace: "nowrap",
+                  whiteSpace: { xs: "normal", sm: "nowrap" },
                   "&:hover": { textDecoration: "underline" },
                 }}
               >

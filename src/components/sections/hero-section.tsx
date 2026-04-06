@@ -169,6 +169,7 @@ export default function HeroSection({ patientsTotal }: HeroSectionProps) {
               />
             }
             sx={{
+              display: { xs: "none", sm: "flex" },
               borderTop: "1px solid rgba(255,255,255,0.2)",
               pt: 2.5,
               width: "fit-content",
