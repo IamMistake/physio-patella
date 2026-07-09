@@ -1,14 +1,11 @@
 # Physio Patella
 
-A modern, professional website for a physiotherapist friend's practice in Skopje. Built to showcase the studio's services, team of specialists, and enable seamless online booking for patients.
+A modern, professional website for a physiotherapist practice in Skopje — showcasing the studio's team of specialists, services, and enabling seamless online booking for patients.
 
-## About
-
-This site serves as the digital presence for a physiotherapy and chiropractic studio. It presents the team of specialists, treated conditions, client testimonials, pricing documents, and an integrated online booking system — all in a clean, accessible design.
+Built for a physiotherapist friend to establish their digital presence with a clean, accessible design.
 
 ## Features
 
-- **Hero section** with studio branding and call-to-action
 - **Employee profiles** with specializations, descriptions, and certificates
 - **Conditions section** covering treated conditions and treatments
 - **Online booking** with available appointment slots
@@ -17,17 +14,7 @@ This site serves as the digital presence for a physiotherapy and chiropractic st
 - **Studio documents** (pricing, policies) with download links
 - **Patient journey** walkthrough
 
-## Tech Stack
-
-- **Next.js 16** (App Router)
-- **React 19**
-- **TypeScript**
-- **MUI 7** (Material-UI)
-- **Supabase** (authentication, database, storage)
-- **Tailwind CSS 4**
-- **Emotion** (styled components)
-
-## Getting Started
+## Getting started
 
 ```bash
 npm install
@@ -36,12 +23,23 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to see the result.
 
+## Tech stack
+
+| | |
+|---|---|
+| **Framework** | Next.js 16 (App Router) |
+| **UI** | React 19, MUI 7, Emotion, Tailwind CSS 4 |
+| **Backend** | Supabase (auth, database, storage) |
+| **Language** | TypeScript |
+
 ## Scripts
 
-- `npm run dev` — start development server
-- `npm run build` — production build
-- `npm run start` — start production server
-- `npm run lint` — run ESLint
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run start` | Start production server |
+| `npm run lint` | Run ESLint |
 
 ## Environment
 
